@@ -6,7 +6,7 @@ export default async function RootPage() {
   const currentSession = await getCurrentApplicationSession().catch(() => null);
 
   if (currentSession) {
-    redirect("/dashboard");
+    redirect("/app");
   }
 
   redirect("/login");

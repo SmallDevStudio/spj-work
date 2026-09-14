@@ -8,56 +8,112 @@ import UserMenu from "@/components/layout/UserMenu";
 
 const pageTitles = [
   {
-    path: "/dashboard/employees",
+    path: "/app/me/profile",
+    eyebrow: "My Services",
+    title: "ข้อมูลของฉัน",
+  },
+  {
+    path: "/app/me/leave",
+    eyebrow: "My Services",
+    title: "การลาของฉัน",
+  },
+  {
+    path: "/app/me/calendar",
+    eyebrow: "My Services",
+    title: "ปฏิทินของฉัน",
+  },
+  {
+    path: "/app/me/announcements",
+    eyebrow: "My Services",
+    title: "ประกาศ",
+  },
+  {
+    path: "/app/me",
+    eyebrow: "Employee Self-Service",
+    title: "บริการของฉัน",
+  },
+  {
+    path: "/app/hr/employees",
     eyebrow: "HR Management",
     title: "ข้อมูลพนักงาน",
   },
   {
-    path: "/dashboard/leave",
+    path: "/app/hr/organization",
     eyebrow: "HR Management",
-    title: "ระบบลา",
+    title: "แผนกและตำแหน่ง",
   },
   {
-    path: "/dashboard/calendar",
+    path: "/app/hr/leave",
     eyebrow: "HR Management",
-    title: "ปฏิทิน",
+    title: "จัดการการลา",
   },
   {
-    path: "/dashboard/announcements",
+    path: "/app/hr/calendar",
+    eyebrow: "HR Management",
+    title: "ปฏิทินบริษัท",
+  },
+  {
+    path: "/app/hr/announcements",
     eyebrow: "HR Management",
     title: "ประกาศ",
   },
   {
-    path: "/dashboard/reports",
-    eyebrow: "Reports",
+    path: "/app/hr/reports",
+    eyebrow: "HR Reports",
     title: "รายงาน",
   },
   {
-    path: "/dashboard/audit-logs",
-    eyebrow: "System",
+    path: "/app/hr/settings",
+    eyebrow: "HR Settings",
+    title: "ตั้งค่า HR",
+  },
+  {
+    path: "/app/hr/audit-logs",
+    eyebrow: "Security & Compliance",
     title: "Audit Log",
   },
   {
-    path: "/dashboard",
+    path: "/app/hr",
     eyebrow: "HR Management",
-    title: "ภาพรวม",
+    title: "ภาพรวม HR",
+  },
+  {
+    path: "/dashboard",
+    eyebrow: "SPJ Work",
+    title: "กำลังเปลี่ยนเส้นทาง",
   },
 ];
 
-function getPageTitle(pathname) {
+const workspaceDefaults = {
+  me: {
+    eyebrow: "Employee Self-Service",
+    title: "บริการของฉัน",
+  },
+  hr: {
+    eyebrow: "HR Management",
+    title: "บริหารทรัพยากรบุคคล",
+  },
+};
+
+function getPageTitle(pathname, workspace) {
   return (
     pageTitles.find(
-      (page) => pathname === page.path || pathname.startsWith(`${page.path}/`),
-    ) ?? {
+      (page) =>
+        pathname === page.path ||
+        (page.path !== "/app/me" &&
+          page.path !== "/app/hr" &&
+          pathname.startsWith(`${page.path}/`)),
+    ) ??
+    workspaceDefaults[workspace] ?? {
       eyebrow: "SPJ Work",
       title: "ระบบบริหารงานภายใน",
     }
   );
 }
 
-export default function Header({ onOpenSidebar, session }) {
+export default function Header({ onOpenSidebar, session, workspace = "me" }) {
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
+  const pageTitle = getPageTitle(pathname, workspace);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
@@ -85,7 +141,6 @@ export default function Header({ onOpenSidebar, session }) {
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
-
           <UserMenu session={session} />
         </div>
       </div>

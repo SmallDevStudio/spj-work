@@ -3,70 +3,144 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  HiOutlineArrowLeft,
+  HiOutlineBuildingOffice2,
   HiOutlineCalendarDays,
   HiOutlineChartBarSquare,
   HiOutlineClipboardDocumentCheck,
+  HiOutlineCog6Tooth,
   HiOutlineHome,
   HiOutlineMegaphone,
   HiOutlineShieldCheck,
+  HiOutlineSquares2X2,
+  HiOutlineUser,
   HiOutlineUserGroup,
   HiXMark,
 } from "react-icons/hi2";
 
 import { PERMISSIONS } from "@/constants/permissions";
+import { ROLE_LABELS } from "@/constants/roles";
 import { cn } from "@/lib/utils/cn";
 
-const navigationItems = [
-  {
-    name: "ภาพรวม",
-    href: "/dashboard",
-    icon: HiOutlineHome,
-    permission: PERMISSIONS.DASHBOARD_READ,
-    enabled: true,
+const workspaceSettings = {
+  me: {
+    name: "บริการของฉัน",
+    shortName: "My Services",
+    homeHref: "/app/me",
+    color: "bg-sky-600 text-white",
+    navigation: [
+      {
+        name: "ภาพรวม",
+        href: "/app/me",
+        icon: HiOutlineHome,
+        permissions: [PERMISSIONS.SERVICE_MY_ACCESS],
+        enabled: true,
+      },
+      {
+        name: "ข้อมูลของฉัน",
+        href: "/app/me/profile",
+        icon: HiOutlineUser,
+        permissions: [PERMISSIONS.EMPLOYEE_READ_OWN],
+        enabled: false,
+      },
+      {
+        name: "การลาของฉัน",
+        href: "/app/me/leave",
+        icon: HiOutlineClipboardDocumentCheck,
+        permissions: [PERMISSIONS.LEAVE_READ_OWN],
+        enabled: false,
+      },
+      {
+        name: "ปฏิทิน",
+        href: "/app/me/calendar",
+        icon: HiOutlineCalendarDays,
+        permissions: [PERMISSIONS.CALENDAR_READ_OWN],
+        enabled: false,
+      },
+      {
+        name: "ประกาศ",
+        href: "/app/me/announcements",
+        icon: HiOutlineMegaphone,
+        permissions: [PERMISSIONS.ANNOUNCEMENT_READ],
+        enabled: false,
+      },
+    ],
   },
-  {
-    name: "พนักงาน",
-    href: "/dashboard/employees",
-    icon: HiOutlineUserGroup,
-    permission: PERMISSIONS.EMPLOYEE_READ,
-    enabled: false,
+  hr: {
+    name: "บริหารทรัพยากรบุคคล",
+    shortName: "HR Management",
+    homeHref: "/app/hr",
+    color: "bg-amber-400 text-slate-950",
+    navigation: [
+      {
+        name: "ภาพรวม HR",
+        href: "/app/hr",
+        icon: HiOutlineHome,
+        permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
+        enabled: true,
+      },
+      {
+        name: "พนักงาน",
+        href: "/app/hr/employees",
+        icon: HiOutlineUserGroup,
+        permissions: [PERMISSIONS.EMPLOYEE_READ_ALL, PERMISSIONS.EMPLOYEE_READ],
+        enabled: false,
+      },
+      {
+        name: "แผนกและตำแหน่ง",
+        href: "/app/hr/organization",
+        icon: HiOutlineBuildingOffice2,
+        permissions: [PERMISSIONS.DEPARTMENT_READ],
+        enabled: false,
+      },
+      {
+        name: "จัดการการลา",
+        href: "/app/hr/leave",
+        icon: HiOutlineClipboardDocumentCheck,
+        permissions: [PERMISSIONS.LEAVE_READ_ALL, PERMISSIONS.LEAVE_MANAGE],
+        enabled: false,
+      },
+      {
+        name: "ปฏิทินบริษัท",
+        href: "/app/hr/calendar",
+        icon: HiOutlineCalendarDays,
+        permissions: [PERMISSIONS.CALENDAR_READ_ALL],
+        enabled: false,
+      },
+      {
+        name: "ประกาศ",
+        href: "/app/hr/announcements",
+        icon: HiOutlineMegaphone,
+        permissions: [
+          PERMISSIONS.ANNOUNCEMENT_CREATE,
+          PERMISSIONS.ANNOUNCEMENT_UPDATE,
+        ],
+        enabled: false,
+      },
+      {
+        name: "รายงาน",
+        href: "/app/hr/reports",
+        icon: HiOutlineChartBarSquare,
+        permissions: [PERMISSIONS.LEAVE_REPORT_READ],
+        enabled: false,
+      },
+      {
+        name: "ตั้งค่า HR",
+        href: "/app/hr/settings",
+        icon: HiOutlineCog6Tooth,
+        permissions: [PERMISSIONS.HR_SETTINGS_READ],
+        enabled: false,
+      },
+      {
+        name: "Audit Log",
+        href: "/app/hr/audit-logs",
+        icon: HiOutlineShieldCheck,
+        permissions: [PERMISSIONS.AUDIT_READ],
+        enabled: false,
+      },
+    ],
   },
-  {
-    name: "การลา",
-    href: "/dashboard/leave",
-    icon: HiOutlineClipboardDocumentCheck,
-    permission: PERMISSIONS.LEAVE_READ_OWN,
-    enabled: false,
-  },
-  {
-    name: "ปฏิทิน",
-    href: "/dashboard/calendar",
-    icon: HiOutlineCalendarDays,
-    permission: PERMISSIONS.CALENDAR_READ_OWN,
-    enabled: false,
-  },
-  {
-    name: "ประกาศ",
-    href: "/dashboard/announcements",
-    icon: HiOutlineMegaphone,
-    permission: PERMISSIONS.ANNOUNCEMENT_READ,
-    enabled: false,
-  },
-  {
-    name: "รายงาน",
-    href: "/dashboard/reports",
-    icon: HiOutlineChartBarSquare,
-    permission: PERMISSIONS.LEAVE_REPORT_READ,
-    enabled: false,
-  },
-  {
-    name: "Audit Log",
-    href: "/dashboard/audit-logs",
-    icon: HiOutlineShieldCheck,
-    permission: PERMISSIONS.AUDIT_READ,
-    enabled: false,
-  },
-];
+};
 
 function getInitials(name, email) {
   const source = name?.trim() || email?.trim() || "SPJ";
@@ -78,14 +152,39 @@ function getInitials(name, email) {
     .join("");
 }
 
-export default function Sidebar({ isOpen, onClose, session }) {
-  const pathname = usePathname();
+function hasAnyPermission(userPermissions, requiredPermissions) {
+  if (!Array.isArray(userPermissions) || !Array.isArray(requiredPermissions)) {
+    return false;
+  }
 
-  const availableNavigation = navigationItems.filter((item) =>
-    session.permissions.includes(item.permission),
+  return requiredPermissions.some((permission) =>
+    userPermissions.includes(permission),
+  );
+}
+
+function isNavigationActive(pathname, href, homeHref) {
+  if (href === homeHref) {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export default function Sidebar({
+  isOpen,
+  onClose,
+  session,
+  workspace = "me",
+}) {
+  const pathname = usePathname();
+  const currentWorkspace = workspaceSettings[workspace] ?? workspaceSettings.me;
+
+  const availableNavigation = currentWorkspace.navigation.filter((item) =>
+    hasAnyPermission(session.permissions, item.permissions),
   );
 
   const initials = getInitials(session.user?.name, session.user?.email);
+  const roleLabel = ROLE_LABELS[session.role]?.th ?? session.role;
 
   return (
     <>
@@ -107,11 +206,16 @@ export default function Sidebar({ isOpen, onClose, session }) {
       >
         <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
           <Link
-            href="/dashboard"
+            href={currentWorkspace.homeHref}
             onClick={onClose}
             className="flex min-w-0 items-center gap-3"
           >
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 font-black text-slate-950">
+            <div
+              className={cn(
+                "flex size-11 shrink-0 items-center justify-center rounded-2xl font-black shadow-sm",
+                currentWorkspace.color,
+              )}
+            >
               SPJ
             </div>
 
@@ -121,7 +225,7 @@ export default function Sidebar({ isOpen, onClose, session }) {
               </p>
 
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                HR Management
+                {currentWorkspace.shortName}
               </p>
             </div>
           </Link>
@@ -136,19 +240,30 @@ export default function Sidebar({ isOpen, onClose, session }) {
           </button>
         </div>
 
+        <div className="px-4 pt-4">
+          <Link
+            href="/app"
+            onClick={onClose}
+            className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
+          >
+            <HiOutlineArrowLeft className="size-5" aria-hidden="true" />
+            <span>กลับไปเลือกบริการ</span>
+          </Link>
+        </div>
+
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            เมนูหลัก
+            {currentWorkspace.name}
           </p>
 
           <ul className="space-y-1.5">
             {availableNavigation.map((item) => {
               const Icon = item.icon;
-
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/dashboard" &&
-                  pathname.startsWith(`${item.href}/`));
+              const isActive = isNavigationActive(
+                pathname,
+                item.href,
+                currentWorkspace.homeHref,
+              );
 
               if (!item.enabled) {
                 return (
@@ -174,13 +289,14 @@ export default function Sidebar({ isOpen, onClose, session }) {
                     className={cn(
                       "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
                       isActive
-                        ? "bg-amber-400 text-slate-950 shadow-sm"
+                        ? workspace === "hr"
+                          ? "bg-amber-400 text-slate-950 shadow-sm"
+                          : "bg-sky-600 text-white shadow-sm"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
                     )}
                   >
                     <Icon className="size-5 shrink-0" aria-hidden="true" />
-
-                    {item.name}
+                    <span>{item.name}</span>
                   </Link>
                 </li>
               );
@@ -200,10 +316,19 @@ export default function Sidebar({ isOpen, onClose, session }) {
               </p>
 
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {session.role}
+                {roleLabel}
               </p>
             </div>
           </div>
+
+          <Link
+            href="/app"
+            onClick={onClose}
+            className="mt-3 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white"
+          >
+            <HiOutlineSquares2X2 className="size-4" aria-hidden="true" />
+            <span>SPJ Work Portal</span>
+          </Link>
         </div>
       </aside>
     </>

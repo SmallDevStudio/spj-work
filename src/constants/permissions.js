@@ -1,7 +1,20 @@
 export const PERMISSIONS = Object.freeze({
+  PORTAL_ACCESS: "portal.access",
+
+  SERVICE_MY_ACCESS: "service.my.access",
+  SERVICE_HR_ACCESS: "service.hr.access",
+  SERVICE_PROJECTS_ACCESS: "service.projects.access",
+
   DASHBOARD_READ: "dashboard.read",
 
+  EMPLOYEE_READ_OWN: "employee.read.own",
+  EMPLOYEE_UPDATE_OWN: "employee.update.own",
+  EMPLOYEE_READ_TEAM: "employee.read.team",
+  EMPLOYEE_READ_ALL: "employee.read.all",
+
+  // Legacy permission: เก็บไว้เพื่อรองรับข้อมูลเดิมใน Firestore
   EMPLOYEE_READ: "employee.read",
+
   EMPLOYEE_CREATE: "employee.create",
   EMPLOYEE_UPDATE: "employee.update",
   EMPLOYEE_DELETE: "employee.delete",
@@ -39,13 +52,23 @@ export const PERMISSIONS = Object.freeze({
   ROLE_MANAGE: "role.manage",
   PERMISSION_MANAGE: "permission.manage",
 
+  HR_SETTINGS_READ: "hr.settings.read",
+  HR_SETTINGS_MANAGE: "hr.settings.manage",
+
+  WORKSPACE_SYNC_READ: "workspace.sync.read",
+  WORKSPACE_SYNC_PREVIEW: "workspace.sync.preview",
+  WORKSPACE_SYNC_EXECUTE: "workspace.sync.execute",
+  WORKSPACE_SYNC_CONFIGURE: "workspace.sync.configure",
+
   AUDIT_READ: "audit.read",
+
   TRASH_READ: "trash.read",
   TRASH_RESTORE: "trash.restore",
   TRASH_DELETE_PERMANENTLY: "trash.delete.permanently",
 
   ORGANIZATION_READ: "organization.read",
   ORGANIZATION_MANAGE: "organization.manage",
+
   SYSTEM_MANAGE: "system.manage",
 });
 

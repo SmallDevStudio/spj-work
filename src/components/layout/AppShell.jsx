@@ -5,7 +5,7 @@ import { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 
-export default function AppShell({ children, session }) {
+export default function AppShell({ children, session, workspace = "me" }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -14,11 +14,13 @@ export default function AppShell({ children, session }) {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         session={session}
+        workspace={workspace}
       />
 
       <div className="min-h-screen lg:pl-72">
         <Header
           session={session}
+          workspace={workspace}
           onOpenSidebar={() => setIsSidebarOpen(true)}
         />
 
