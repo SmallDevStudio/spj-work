@@ -5,6 +5,7 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi2";
 
+import FirebaseStatus from "@/components/system/FirebaseStatus";
 import { APP_CONFIG } from "@/config/app.config";
 
 const modules = [
@@ -51,6 +52,10 @@ export default function HomePage() {
             ระบบบริหารทรัพยากรบุคคลและการจัดการงานภายใน
             ที่ออกแบบสำหรับทีมผลิตรายการโทรทัศน์และงานคอนเทนต์
           </p>
+
+          <div className="mt-6">
+            <FirebaseStatus />
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -76,11 +81,6 @@ export default function HomePage() {
               </article>
             );
           })}
-        </div>
-
-        <div className="mt-8 flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-          <span className="size-2 rounded-full bg-emerald-500" />
-          Project foundation พร้อมสำหรับการตั้งค่า Firebase
         </div>
       </section>
     </main>

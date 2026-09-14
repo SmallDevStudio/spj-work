@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "spj-work-dev",
+    "development": "spj-work-dev"
+  }
+}

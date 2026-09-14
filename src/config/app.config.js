@@ -10,9 +10,22 @@ export const APP_CONFIG = Object.freeze({
   defaultLocale: "th",
   supportedLocales: ["th", "en"],
   timezone: "Asia/Bangkok",
-  sessionCookieName: "__session",
-  sessionDurationDays: 5,
   firebaseRegion: "asia-southeast1",
+
+  session: Object.freeze({
+    developmentCookieName: "spj_session",
+    productionCookieName: "__Host-spj_session",
+    durationDays: 5,
+    maximumAgeSeconds: 5 * 24 * 60 * 60,
+    recentSignInSeconds: 5 * 60,
+  }),
+
+  csrf: Object.freeze({
+    developmentCookieName: "spj_csrf",
+    productionCookieName: "__Host-spj_csrf",
+    headerName: "x-csrf-token",
+    maximumAgeSeconds: 10 * 60,
+  }),
 });
 
 export const APP_METADATA = Object.freeze({
