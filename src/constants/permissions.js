@@ -3,6 +3,7 @@ export const PERMISSIONS = Object.freeze({
 
   SERVICE_MY_ACCESS: "service.my.access",
   SERVICE_HR_ACCESS: "service.hr.access",
+  SERVICE_IT_ACCESS: "service.it.access",
   SERVICE_PROJECTS_ACCESS: "service.projects.access",
 
   DASHBOARD_READ: "dashboard.read",
@@ -12,7 +13,7 @@ export const PERMISSIONS = Object.freeze({
   EMPLOYEE_READ_TEAM: "employee.read.team",
   EMPLOYEE_READ_ALL: "employee.read.all",
 
-  // Legacy permission: เก็บไว้เพื่อรองรับข้อมูลเดิมใน Firestore
+  // Legacy permission สำหรับข้อมูลเดิม
   EMPLOYEE_READ: "employee.read",
 
   EMPLOYEE_CREATE: "employee.create",
@@ -20,8 +21,28 @@ export const PERMISSIONS = Object.freeze({
   EMPLOYEE_DELETE: "employee.delete",
   EMPLOYEE_EXPORT: "employee.export",
 
+  EMPLOYEE_PIN_CREATE: "employee.pin.create",
+  EMPLOYEE_PIN_READ: "employee.pin.read",
+  EMPLOYEE_PIN_UPDATE: "employee.pin.update",
+
   DEPARTMENT_READ: "department.read",
   DEPARTMENT_MANAGE: "department.manage",
+
+  ONBOARDING_CREATE: "onboarding.create",
+  ONBOARDING_READ_ALL: "onboarding.read.all",
+  ONBOARDING_HR_MANAGE: "onboarding.hr.manage",
+  ONBOARDING_IT_PROCESS: "onboarding.it.process",
+  ONBOARDING_COMPLETE: "onboarding.complete",
+
+  ASSET_READ: "asset.read",
+  ASSET_CREATE: "asset.create",
+  ASSET_UPDATE: "asset.update",
+  ASSET_ASSIGN: "asset.assign",
+  ASSET_RETURN: "asset.return",
+  ASSET_MANAGE: "asset.manage",
+
+  NOTIFICATION_READ: "notification.read",
+  NOTIFICATION_MANAGE: "notification.manage",
 
   LEAVE_READ_OWN: "leave.read.own",
   LEAVE_READ_TEAM: "leave.read.team",

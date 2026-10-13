@@ -4,143 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HiOutlineArrowLeft,
-  HiOutlineBuildingOffice2,
-  HiOutlineCalendarDays,
-  HiOutlineChartBarSquare,
-  HiOutlineClipboardDocumentCheck,
-  HiOutlineCog6Tooth,
-  HiOutlineHome,
-  HiOutlineMegaphone,
-  HiOutlineShieldCheck,
   HiOutlineSquares2X2,
-  HiOutlineUser,
-  HiOutlineUserGroup,
   HiXMark,
 } from "react-icons/hi2";
 
-import { PERMISSIONS } from "@/constants/permissions";
 import { ROLE_LABELS } from "@/constants/roles";
+import { WORKSPACE_SETTINGS } from "@/constants/workspace-navigation";
 import { cn } from "@/lib/utils/cn";
-
-const workspaceSettings = {
-  me: {
-    name: "บริการของฉัน",
-    shortName: "My Services",
-    homeHref: "/app/me",
-    color: "bg-sky-600 text-white",
-    navigation: [
-      {
-        name: "ภาพรวม",
-        href: "/app/me",
-        icon: HiOutlineHome,
-        permissions: [PERMISSIONS.SERVICE_MY_ACCESS],
-        enabled: true,
-      },
-      {
-        name: "ข้อมูลของฉัน",
-        href: "/app/me/profile",
-        icon: HiOutlineUser,
-        permissions: [PERMISSIONS.EMPLOYEE_READ_OWN],
-        enabled: false,
-      },
-      {
-        name: "การลาของฉัน",
-        href: "/app/me/leave",
-        icon: HiOutlineClipboardDocumentCheck,
-        permissions: [PERMISSIONS.LEAVE_READ_OWN],
-        enabled: false,
-      },
-      {
-        name: "ปฏิทิน",
-        href: "/app/me/calendar",
-        icon: HiOutlineCalendarDays,
-        permissions: [PERMISSIONS.CALENDAR_READ_OWN],
-        enabled: false,
-      },
-      {
-        name: "ประกาศ",
-        href: "/app/me/announcements",
-        icon: HiOutlineMegaphone,
-        permissions: [PERMISSIONS.ANNOUNCEMENT_READ],
-        enabled: false,
-      },
-    ],
-  },
-  hr: {
-    name: "บริหารทรัพยากรบุคคล",
-    shortName: "HR Management",
-    homeHref: "/app/hr",
-    color: "bg-amber-400 text-slate-950",
-    navigation: [
-      {
-        name: "ภาพรวม HR",
-        href: "/app/hr",
-        icon: HiOutlineHome,
-        permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
-        enabled: true,
-      },
-      {
-        name: "พนักงาน",
-        href: "/app/hr/employees",
-        icon: HiOutlineUserGroup,
-        permissions: [PERMISSIONS.EMPLOYEE_READ_ALL, PERMISSIONS.EMPLOYEE_READ],
-        enabled: false,
-      },
-      {
-        name: "แผนกและตำแหน่ง",
-        href: "/app/hr/organization",
-        icon: HiOutlineBuildingOffice2,
-        permissions: [PERMISSIONS.DEPARTMENT_READ],
-        enabled: false,
-      },
-      {
-        name: "จัดการการลา",
-        href: "/app/hr/leave",
-        icon: HiOutlineClipboardDocumentCheck,
-        permissions: [PERMISSIONS.LEAVE_READ_ALL, PERMISSIONS.LEAVE_MANAGE],
-        enabled: false,
-      },
-      {
-        name: "ปฏิทินบริษัท",
-        href: "/app/hr/calendar",
-        icon: HiOutlineCalendarDays,
-        permissions: [PERMISSIONS.CALENDAR_READ_ALL],
-        enabled: false,
-      },
-      {
-        name: "ประกาศ",
-        href: "/app/hr/announcements",
-        icon: HiOutlineMegaphone,
-        permissions: [
-          PERMISSIONS.ANNOUNCEMENT_CREATE,
-          PERMISSIONS.ANNOUNCEMENT_UPDATE,
-        ],
-        enabled: false,
-      },
-      {
-        name: "รายงาน",
-        href: "/app/hr/reports",
-        icon: HiOutlineChartBarSquare,
-        permissions: [PERMISSIONS.LEAVE_REPORT_READ],
-        enabled: false,
-      },
-      {
-        name: "ตั้งค่า HR",
-        href: "/app/hr/settings",
-        icon: HiOutlineCog6Tooth,
-        permissions: [PERMISSIONS.HR_SETTINGS_READ],
-        enabled: false,
-      },
-      {
-        name: "Audit Log",
-        href: "/app/hr/audit-logs",
-        icon: HiOutlineShieldCheck,
-        permissions: [PERMISSIONS.AUDIT_READ],
-        enabled: false,
-      },
-    ],
-  },
-};
 
 function getInitials(name, email) {
   const source = name?.trim() || email?.trim() || "SPJ";
@@ -177,7 +47,9 @@ export default function Sidebar({
   workspace = "me",
 }) {
   const pathname = usePathname();
-  const currentWorkspace = workspaceSettings[workspace] ?? workspaceSettings.me;
+
+  const currentWorkspace =
+    WORKSPACE_SETTINGS[workspace] ?? WORKSPACE_SETTINGS.me;
 
   const availableNavigation = currentWorkspace.navigation.filter((item) =>
     hasAnyPermission(session.permissions, item.permissions),
@@ -213,7 +85,7 @@ export default function Sidebar({
             <div
               className={cn(
                 "flex size-11 shrink-0 items-center justify-center rounded-2xl font-black shadow-sm",
-                currentWorkspace.color,
+                currentWorkspace.brandClassName,
               )}
             >
               SPJ
@@ -259,6 +131,7 @@ export default function Sidebar({
           <ul className="space-y-1.5">
             {availableNavigation.map((item) => {
               const Icon = item.icon;
+
               const isActive = isNavigationActive(
                 pathname,
                 item.href,
@@ -289,9 +162,7 @@ export default function Sidebar({
                     className={cn(
                       "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
                       isActive
-                        ? workspace === "hr"
-                          ? "bg-amber-400 text-slate-950 shadow-sm"
-                          : "bg-sky-600 text-white shadow-sm"
+                        ? currentWorkspace.activeClassName
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
                     )}
                   >

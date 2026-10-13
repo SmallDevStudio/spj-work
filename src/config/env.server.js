@@ -7,6 +7,9 @@ const allowedOrigins = rawAllowedOrigins
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const employeeDataEncryptionKey =
+  process.env.EMPLOYEE_DATA_ENCRYPTION_KEY?.trim();
+
 const serverEnvironment = Object.freeze({
   firebaseAdminProjectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
   firebaseAdminClientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
@@ -15,6 +18,7 @@ const serverEnvironment = Object.freeze({
   allowedOrigins: Object.freeze(allowedOrigins),
   emergencySuperadminEmail:
     process.env.EMERGENCY_SUPERADMIN_EMAIL?.trim().toLowerCase(),
+  employeeDataEncryptionKey,
 });
 
 const requiredEnvironmentVariables = {
@@ -25,6 +29,7 @@ const requiredEnvironmentVariables = {
   APP_ALLOWED_ORIGINS:
     serverEnvironment.allowedOrigins.length > 0 ? rawAllowedOrigins : null,
   EMERGENCY_SUPERADMIN_EMAIL: serverEnvironment.emergencySuperadminEmail,
+  EMPLOYEE_DATA_ENCRYPTION_KEY: serverEnvironment.employeeDataEncryptionKey,
 };
 
 const missingEnvironmentVariables = Object.entries(requiredEnvironmentVariables)
@@ -39,6 +44,23 @@ if (missingEnvironmentVariables.length > 0) {
 
 if (serverEnvironment.csrfSecret.length < 32) {
   throw new Error("CSRF_SECRET must contain at least 32 characters.");
+}
+
+let decodedEmployeeEncryptionKey;
+
+try {
+  decodedEmployeeEncryptionKey = Buffer.from(
+    serverEnvironment.employeeDataEncryptionKey,
+    "base64",
+  );
+} catch {
+  throw new Error("EMPLOYEE_DATA_ENCRYPTION_KEY must be valid Base64.");
+}
+
+if (decodedEmployeeEncryptionKey.length !== 32) {
+  throw new Error(
+    "EMPLOYEE_DATA_ENCRYPTION_KEY must decode to exactly 32 bytes.",
+  );
 }
 
 for (const origin of serverEnvironment.allowedOrigins) {
