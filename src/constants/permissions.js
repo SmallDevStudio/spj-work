@@ -21,9 +21,9 @@ export const PERMISSIONS = Object.freeze({
   EMPLOYEE_DELETE: "employee.delete",
   EMPLOYEE_EXPORT: "employee.export",
 
-  EMPLOYEE_PIN_CREATE: "employee.pin.create",
-  EMPLOYEE_PIN_READ: "employee.pin.read",
-  EMPLOYEE_PIN_UPDATE: "employee.pin.update",
+  PRINTER_CODE_CREATE: "employee.printer-code.create",
+  PRINTER_CODE_READ: "employee.printer-code.read",
+  PRINTER_CODE_UPDATE: "employee.printer-code.update",
 
   DEPARTMENT_READ: "department.read",
   DEPARTMENT_MANAGE: "department.manage",

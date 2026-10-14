@@ -6,13 +6,12 @@ import {
   HiOutlineBuildingOffice2,
   HiOutlineDevicePhoneMobile,
   HiOutlineEnvelope,
-  HiOutlineEye,
-  HiOutlineEyeSlash,
   HiOutlineMagnifyingGlass,
   HiOutlinePlus,
   HiOutlineUser,
   HiOutlineUserGroup,
   HiOutlineXMark,
+  HiOutlinePencilSquare,
 } from "react-icons/hi2";
 
 import {
@@ -25,15 +24,26 @@ import {
   EMPLOYMENT_STATUS_LABELS,
   EMPLOYMENT_TYPE,
   EMPLOYMENT_TYPE_LABELS,
+  MANAGER_ASSIGNMENT_TYPE,
+  MANAGER_ASSIGNMENT_TYPE_LABELS,
 } from "@/constants/employees";
-import {
-  DEVICE_REQUIREMENT,
-  DEVICE_REQUIREMENT_LABELS,
-} from "@/constants/onboarding";
+
 import {
   createEmployeeRequest,
   getEmployeeApiErrorMessage,
+  updateEmployeeRequest,
 } from "@/services/hr/employee.api";
+
+import {
+  createDepartmentRequest,
+  getApiErrorMessage as getDepartmentApiErrorMessage,
+} from "@/services/hr/organization-structure.api";
+
+const initialDepartmentForm = {
+  nameTh: "",
+  description: "",
+  managerEmployeeId: "",
+};
 
 function createInitialForm() {
   return {
@@ -45,18 +55,49 @@ function createInitialForm() {
     phoneNumber: "",
     positionTitle: "",
     departmentId: "",
+    managerAssignmentType: DEFAULT_EMPLOYEE_VALUES.managerAssignmentType,
     managerEmployeeId: "",
-    employeePin: "",
+    printerCode: "",
+    workEmail: "",
     notes: "",
     employmentType: DEFAULT_EMPLOYEE_VALUES.employmentType,
     employmentStatus: DEFAULT_EMPLOYEE_VALUES.employmentStatus,
     effectiveDate: "",
     role: DEFAULT_EMPLOYEE_VALUES.role,
+  };
+}
 
-    submitToIT: true,
-    deviceRequirement: DEVICE_REQUIREMENT.NOTEBOOK,
-    deviceRequirementNotes: "",
-    onboardingNotes: "",
+function createEditForm(employee) {
+  return {
+    employeeCode: employee.employeeCode ?? "",
+    workEmail: employee.workEmail ?? "",
+    firstName: employee.firstName ?? "",
+    lastName: employee.lastName ?? "",
+
+    gender: employee.gender ?? DEFAULT_EMPLOYEE_VALUES.gender,
+
+    birthDate: employee.birthDate ?? "",
+    phoneNumber: employee.phoneNumber ?? "",
+    positionTitle: employee.positionTitle ?? "",
+    departmentId: employee.departmentId ?? "",
+
+    managerAssignmentType:
+      employee.managerAssignmentType ??
+      DEFAULT_EMPLOYEE_VALUES.managerAssignmentType,
+
+    managerEmployeeId: employee.managerEmployeeId ?? "",
+
+    printerCode: employee.printerCode ?? "",
+    notes: employee.notes ?? "",
+
+    employmentType:
+      employee.employmentType ?? DEFAULT_EMPLOYEE_VALUES.employmentType,
+
+    employmentStatus:
+      employee.employmentStatus ?? DEFAULT_EMPLOYEE_VALUES.employmentStatus,
+
+    effectiveDate: employee.effectiveDate ?? "",
+    role: employee.role ?? DEFAULT_EMPLOYEE_VALUES.role,
   };
 }
 
@@ -199,16 +240,23 @@ function AccessStatusBadge({ status }) {
 
 export default function EmployeeDirectoryClient({
   employees,
-  departments,
+  departments: initialDepartments,
   canCreate,
+  canEdit,
+  canManageDepartments,
 }) {
   const router = useRouter();
 
+  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [departments, setDepartments] = useState(initialDepartments);
+  const [departmentFormOpen, setDepartmentFormOpen] = useState(false);
+  const [departmentForm, setDepartmentForm] = useState(initialDepartmentForm);
+  const [departmentSubmitting, setDepartmentSubmitting] = useState(false);
+  const [departmentError, setDepartmentError] = useState("");
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showPin, setShowPin] = useState(false);
   const [form, setForm] = useState(createInitialForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -275,10 +323,26 @@ export default function EmployeeDirectoryClient({
   }, [departmentFilter, employees, search, statusFilter]);
 
   function openDialog() {
+    setEditingEmployeeId(null);
     setForm(createInitialForm());
     setFormError("");
     setSuccessMessage("");
-    setShowPin(false);
+    setDepartmentForm(initialDepartmentForm);
+    setDepartmentFormOpen(false);
+    setDepartmentError("");
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(employee) {
+    setEditingEmployeeId(employee.id);
+    setForm(createEditForm(employee));
+    setFormError("");
+    setSuccessMessage("");
+
+    setDepartmentForm(initialDepartmentForm);
+    setDepartmentFormOpen(false);
+    setDepartmentError("");
+
     setDialogOpen(true);
   }
 
@@ -286,10 +350,12 @@ export default function EmployeeDirectoryClient({
     if (submitting) {
       return;
     }
-
+    setEditingEmployeeId(null);
+    setDepartmentFormOpen(false);
+    setDepartmentForm(initialDepartmentForm);
+    setDepartmentError("");
     setDialogOpen(false);
     setFormError("");
-    setShowPin(false);
   }
 
   function handleChange(event) {
@@ -301,13 +367,82 @@ export default function EmployeeDirectoryClient({
     }));
   }
 
-  function handlePinChange(event) {
+  function handlePrinterCodeChange(event) {
     const value = event.target.value.replace(/\D/g, "").slice(0, 4);
 
     setForm((currentForm) => ({
       ...currentForm,
-      employeePin: value,
+      printerCode: value,
     }));
+  }
+
+  function openDepartmentForm() {
+    setDepartmentForm(initialDepartmentForm);
+    setDepartmentError("");
+    setDepartmentFormOpen(true);
+  }
+
+  function closeDepartmentForm() {
+    if (departmentSubmitting) {
+      return;
+    }
+
+    setDepartmentFormOpen(false);
+    setDepartmentForm(initialDepartmentForm);
+    setDepartmentError("");
+  }
+
+  function handleDepartmentChange(event) {
+    const { name, value } = event.target;
+
+    setDepartmentForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  }
+
+  async function handleCreateDepartment() {
+    const departmentName = departmentForm.nameTh.trim();
+
+    if (!departmentName) {
+      setDepartmentError("กรุณากรอกชื่อแผนก");
+      return;
+    }
+
+    setDepartmentSubmitting(true);
+    setDepartmentError("");
+
+    try {
+      const department = await createDepartmentRequest({
+        nameTh: departmentName,
+        description: departmentForm.description.trim() || null,
+        managerEmployeeId: departmentForm.managerEmployeeId || null,
+      });
+
+      setDepartments((currentDepartments) =>
+        [...currentDepartments, department].sort(
+          (firstDepartment, secondDepartment) =>
+            (firstDepartment.nameTh ?? "").localeCompare(
+              secondDepartment.nameTh ?? "",
+              "th",
+            ),
+        ),
+      );
+
+      setForm((currentForm) => ({
+        ...currentForm,
+        departmentId: department.id,
+        managerAssignmentType: MANAGER_ASSIGNMENT_TYPE.DEPARTMENT,
+        managerEmployeeId: "",
+      }));
+
+      setDepartmentForm(initialDepartmentForm);
+      setDepartmentFormOpen(false);
+    } catch (error) {
+      setDepartmentError(getDepartmentApiErrorMessage(error));
+    } finally {
+      setDepartmentSubmitting(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -317,44 +452,53 @@ export default function EmployeeDirectoryClient({
     setFormError("");
 
     try {
-      const result = await createEmployeeRequest({
-        employee: {
-          employeeCode: form.employeeCode,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          gender: form.gender,
-          birthDate: form.birthDate,
-          phoneNumber: form.phoneNumber,
-          positionTitle: form.positionTitle,
-          departmentId: form.departmentId,
-          managerEmployeeId: form.managerEmployeeId || null,
-          employeePin: form.employeePin,
-          notes: form.notes || null,
-          employmentType: form.employmentType,
-          employmentStatus: form.employmentStatus,
-          effectiveDate: form.effectiveDate,
-          workEmail: null,
-          role: form.role,
-        },
-        onboarding: {
-          submitToIT: form.submitToIT,
-          deviceRequirement: form.deviceRequirement,
-          deviceRequirementNotes: form.deviceRequirementNotes || null,
-          notes: form.onboardingNotes || null,
-        },
-      });
+      const input = {
+        employeeCode: form.employeeCode,
+        workEmail: form.workEmail,
+        firstName: form.firstName,
+        lastName: form.lastName,
+
+        gender: form.gender,
+        birthDate: form.birthDate || null,
+        phoneNumber: form.phoneNumber || null,
+        positionTitle: form.positionTitle || null,
+        departmentId: form.departmentId || null,
+
+        managerAssignmentType: form.managerAssignmentType,
+        managerEmployeeId:
+          form.managerAssignmentType === MANAGER_ASSIGNMENT_TYPE.MANUAL
+            ? form.managerEmployeeId || null
+            : null,
+
+        printerCode: form.printerCode || null,
+        notes: form.notes || null,
+        employmentType: form.employmentType,
+        employmentStatus: form.employmentStatus,
+        effectiveDate: form.effectiveDate || null,
+        role: form.role,
+      };
+
+      const result = editingEmployeeId
+        ? await updateEmployeeRequest({
+            employeeId: editingEmployeeId,
+            input,
+          })
+        : await createEmployeeRequest(input);
 
       const employeeName =
         result?.employee?.displayName ||
         `${form.firstName} ${form.lastName}`.trim();
 
+      const completedEdit = Boolean(editingEmployeeId);
+
       setDialogOpen(false);
+      setEditingEmployeeId(null);
       setForm(createInitialForm());
-      setShowPin(false);
+
       setSuccessMessage(
-        form.submitToIT
-          ? `เพิ่ม ${employeeName} และส่งคำขอไปยังฝ่าย IT แล้ว`
-          : `บันทึกข้อมูล ${employeeName} เป็นแบบร่างแล้ว`,
+        completedEdit
+          ? `แก้ไขข้อมูล ${employeeName} เรียบร้อยแล้ว`
+          : `เพิ่มข้อมูลพนักงาน ${employeeName} เรียบร้อยแล้ว`,
       );
 
       router.refresh();
@@ -379,8 +523,8 @@ export default function EmployeeDirectoryClient({
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              จัดการข้อมูลพนักงาน โครงสร้างผู้บังคับบัญชา และส่งงานเตรียมบัญชี
-              กับอุปกรณ์ไปยังฝ่าย IT
+              จัดการข้อมูลพนักงาน แผนก สิทธิ์เข้าใช้งาน
+              และโครงสร้างผู้บังคับบัญชาภายในบริษัท
             </p>
           </div>
 
@@ -417,13 +561,13 @@ export default function EmployeeDirectoryClient({
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              อยู่ระหว่าง Onboarding
+              พนักงานที่ปฏิบัติงาน
             </p>
-            <p className="mt-2 text-3xl font-black text-amber-600 dark:text-amber-400">
+            <p className="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-400">
               {
                 employees.filter(
                   (employee) =>
-                    employee.employmentStatus === EMPLOYMENT_STATUS.ONBOARDING,
+                    employee.employmentStatus === EMPLOYMENT_STATUS.ACTIVE,
                 ).length
               }
             </p>
@@ -532,6 +676,19 @@ export default function EmployeeDirectoryClient({
                         <EmploymentStatusBadge
                           status={employee.employmentStatus}
                         />
+                        {canEdit ? (
+                          <button
+                            type="button"
+                            onClick={() => openEditDialog(employee)}
+                            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
+                          >
+                            <HiOutlinePencilSquare
+                              className="size-4"
+                              aria-hidden="true"
+                            />
+                            แก้ไข
+                          </button>
+                        ) : null}
                       </div>
 
                       <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -545,20 +702,40 @@ export default function EmployeeDirectoryClient({
                             "ไม่พบแผนก"}
                         </p>
 
-                        <p className="flex items-center gap-2">
-                          <HiOutlineUser className="size-4 shrink-0" />
-                          หัวหน้า:{" "}
-                          {employee.managerEmployeeId
-                            ? employeeMap.get(employee.managerEmployeeId) ||
-                              "ไม่พบข้อมูล"
-                            : "ยังไม่กำหนด"}
-                        </p>
+                        <div>
+                          <p className="flex items-center gap-2">
+                            <HiOutlineUser className="size-4 shrink-0" />
+                            หัวหน้า:{" "}
+                            {employee.effectiveManagerEmployeeId
+                              ? employeeMap.get(
+                                  employee.effectiveManagerEmployeeId,
+                                ) || "ไม่พบข้อมูล"
+                              : "ยังไม่กำหนด"}
+                          </p>
+
+                          <p className="mt-1 pl-6 text-xs text-slate-400">
+                            {employee.effectiveManagerSource ===
+                            MANAGER_ASSIGNMENT_TYPE.MANUAL
+                              ? "กำหนดเฉพาะบุคคล"
+                              : employee.effectiveManagerSource ===
+                                  MANAGER_ASSIGNMENT_TYPE.NONE
+                                ? "ไม่ใช้หัวหน้างาน"
+                                : "ตามหัวหน้าแผนก"}
+                          </p>
+                        </div>
 
                         <p className="flex items-center gap-2">
                           <HiOutlineEnvelope className="size-4 shrink-0" />
                           <span className="truncate">
-                            {employee.workEmail || "รอ IT สร้างอีเมล"}
+                            {employee.workEmail || "ยังไม่มีอีเมล"}
                           </span>
+                        </p>
+
+                        <p className="flex items-center gap-2">
+                          <span className="inline-flex size-4 shrink-0 items-center justify-center text-xs font-bold">
+                            #
+                          </span>
+                          Printer: {employee.printerCode || "-"}
                         </p>
 
                         <p className="flex items-center gap-2">
@@ -584,10 +761,12 @@ export default function EmployeeDirectoryClient({
           <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7 dark:border-slate-800 dark:bg-slate-900">
             <div>
               <h2 className="text-xl font-bold text-slate-950 dark:text-white">
-                เพิ่มพนักงาน
+                {editingEmployeeId ? "แก้ไขข้อมูลพนักงาน" : "เพิ่มพนักงาน"}
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                บันทึกข้อมูลพนักงานและส่งงานเตรียมบัญชีไปยังฝ่าย IT
+                {editingEmployeeId
+                  ? "แก้ไขข้อมูล แผนก และการกำหนดหัวหน้างาน"
+                  : "บันทึกข้อมูลพนักงาน อีเมลสำหรับเข้าใช้งาน และรหัส Printer"}
               </p>
             </div>
 
@@ -626,46 +805,34 @@ export default function EmployeeDirectoryClient({
                   required
                 />
 
-                <div>
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    รหัสเครื่องพิมพ์ 4 หลัก
-                    <span className="ml-1 text-red-500">*</span>
-                  </span>
+                <Field
+                  label="รหัส Printer"
+                  name="printerCode"
+                  value={form.printerCode}
+                  onChange={handlePrinterCodeChange}
+                  inputMode="numeric"
+                  pattern="\d{4}"
+                  autoComplete="off"
+                  placeholder="เช่น 0001"
+                />
 
-                  <div className="relative mt-2">
-                    <input
-                      type={showPin ? "text" : "password"}
-                      name="employeePin"
-                      value={form.employeePin}
-                      onChange={handlePinChange}
-                      required
-                      inputMode="numeric"
-                      pattern="\d{4}"
-                      maxLength={4}
-                      autoComplete="new-password"
-                      placeholder="0000"
-                      className="min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 pr-12 text-sm tracking-[0.35em] text-slate-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    />
+                <Field
+                  label="อีเมลบริษัท"
+                  name="workEmail"
+                  type="email"
+                  value={form.workEmail}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  placeholder="name@superjeew.com"
+                  required
+                />
 
-                    <button
-                      type="button"
-                      onClick={() => setShowPin((current) => !current)}
-                      aria-label={showPin ? "ซ่อนรหัส" : "แสดงรหัส"}
-                      className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {showPin ? (
-                        <HiOutlineEyeSlash className="size-5" />
-                      ) : (
-                        <HiOutlineEye className="size-5" />
-                      )}
-                    </button>
-                  </div>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  ระบบจะเข้ารหัสและไม่แสดงรหัสนี้ในรายชื่อพนักงาน
+                </p>
+              </div>
 
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    ระบบจะเข้ารหัสและไม่แสดงรหัสนี้ในรายชื่อพนักงาน
-                  </p>
-                </div>
-
+              <div>
                 <Field
                   label="ชื่อ"
                   name="firstName"
@@ -687,7 +854,6 @@ export default function EmployeeDirectoryClient({
                   name="gender"
                   value={form.gender}
                   onChange={handleChange}
-                  required
                 >
                   {Object.values(EMPLOYEE_GENDER).map((gender) => (
                     <option key={gender} value={gender}>
@@ -702,7 +868,6 @@ export default function EmployeeDirectoryClient({
                   type="date"
                   value={form.birthDate}
                   onChange={handleChange}
-                  required
                 />
 
                 <Field
@@ -712,7 +877,6 @@ export default function EmployeeDirectoryClient({
                   onChange={handleChange}
                   inputMode="tel"
                   placeholder="เช่น 0812345678"
-                  required
                 />
 
                 <Field
@@ -721,7 +885,6 @@ export default function EmployeeDirectoryClient({
                   value={form.positionTitle}
                   onChange={handleChange}
                   placeholder="เช่น Video Editor"
-                  required
                 />
 
                 <SelectField
@@ -729,7 +892,6 @@ export default function EmployeeDirectoryClient({
                   name="departmentId"
                   value={form.departmentId}
                   onChange={handleChange}
-                  required
                 >
                   <option value="">เลือกแผนก</option>
                   {departments.map((department) => (
@@ -739,26 +901,176 @@ export default function EmployeeDirectoryClient({
                   ))}
                 </SelectField>
 
+                {canManageDepartments ? (
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={
+                        departmentFormOpen
+                          ? closeDepartmentForm
+                          : openDepartmentForm
+                      }
+                      disabled={departmentSubmitting}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                    >
+                      {departmentFormOpen ? (
+                        <HiOutlineXMark className="size-4" aria-hidden="true" />
+                      ) : (
+                        <HiOutlinePlus className="size-4" aria-hidden="true" />
+                      )}
+
+                      {departmentFormOpen ? "ยกเลิกเพิ่มแผนก" : "เพิ่มแผนกใหม่"}
+                    </button>
+                  </div>
+                ) : null}
+
+                {canManageDepartments && departmentFormOpen ? (
+                  <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:col-span-2 sm:p-5 dark:border-amber-900 dark:bg-amber-950/20">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
+                        <HiOutlineBuildingOffice2
+                          className="size-5"
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-slate-950 dark:text-white">
+                          เพิ่มแผนกใหม่
+                        </h4>
+
+                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                          เมื่อบันทึกแล้วระบบจะเลือกแผนกใหม่นี้ให้พนักงานอัตโนมัติ
+                        </p>
+                      </div>
+                    </div>
+
+                    {departmentError ? (
+                      <div
+                        role="alert"
+                        className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300"
+                      >
+                        {departmentError}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                      <Field
+                        label="ชื่อแผนก"
+                        name="nameTh"
+                        value={departmentForm.nameTh}
+                        onChange={handleDepartmentChange}
+                        placeholder="เช่น บัญชี"
+                        required
+                      />
+
+                      <SelectField
+                        label="หัวหน้าแผนก"
+                        name="managerEmployeeId"
+                        value={departmentForm.managerEmployeeId}
+                        onChange={handleDepartmentChange}
+                      >
+                        <option value="">ยังไม่กำหนดหัวหน้าแผนก</option>
+
+                        {employees
+                          .filter(
+                            (employee) => employee.id !== editingEmployeeId,
+                          )
+                          .map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.employeeCode} — {employee.displayName}
+                            </option>
+                          ))}
+                      </SelectField>
+                    </div>
+
+                    <label className="mt-4 block">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        รายละเอียด
+                      </span>
+
+                      <textarea
+                        name="description"
+                        value={departmentForm.description}
+                        onChange={handleDepartmentChange}
+                        rows={3}
+                        maxLength={500}
+                        placeholder="รายละเอียดหรือหน้าที่ของแผนก"
+                        className="mt-2 w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                      />
+                    </label>
+
+                    <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={closeDepartmentForm}
+                        disabled={departmentSubmitting}
+                        className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        ยกเลิก
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCreateDepartment}
+                        disabled={departmentSubmitting}
+                        className="min-h-11 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {departmentSubmitting
+                          ? "กำลังเพิ่มแผนก..."
+                          : "บันทึกแผนก"}
+                      </button>
+                    </div>
+                  </section>
+                ) : null}
+
                 <SelectField
-                  label="หัวหน้างาน"
-                  name="managerEmployeeId"
-                  value={form.managerEmployeeId}
+                  label="การกำหนดหัวหน้างาน"
+                  name="managerAssignmentType"
+                  value={form.managerAssignmentType}
                   onChange={handleChange}
                 >
-                  <option value="">ยังไม่กำหนดหัวหน้างาน</option>
-                  {employees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.employeeCode} — {employee.displayName}
+                  {Object.values(MANAGER_ASSIGNMENT_TYPE).map((type) => (
+                    <option key={type} value={type}>
+                      {MANAGER_ASSIGNMENT_TYPE_LABELS[type].th}
                     </option>
                   ))}
                 </SelectField>
+
+                {form.managerAssignmentType ===
+                MANAGER_ASSIGNMENT_TYPE.MANUAL ? (
+                  <SelectField
+                    label="หัวหน้างานเฉพาะบุคคล"
+                    name="managerEmployeeId"
+                    value={form.managerEmployeeId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">เลือกหัวหน้างาน</option>
+
+                    {employees
+                      .filter((employee) => employee.id !== editingEmployeeId)
+                      .map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.employeeCode} — {employee.displayName}
+                        </option>
+                      ))}
+                  </SelectField>
+                ) : null}
+
+                {form.managerAssignmentType ===
+                MANAGER_ASSIGNMENT_TYPE.DEPARTMENT ? (
+                  <p className="text-sm text-slate-500 sm:col-span-2 dark:text-slate-400">
+                    ระบบจะใช้หัวหน้าแผนกโดยอัตโนมัติ
+                    และจะเปลี่ยนตามเมื่อมีการเปลี่ยนหัวหน้าแผนก
+                  </p>
+                ) : null}
 
                 <SelectField
                   label="ประเภทการจ้าง"
                   name="employmentType"
                   value={form.employmentType}
                   onChange={handleChange}
-                  required
                 >
                   {Object.values(EMPLOYMENT_TYPE).map((type) => (
                     <option key={type} value={type}>
@@ -772,7 +1084,6 @@ export default function EmployeeDirectoryClient({
                   name="employmentStatus"
                   value={form.employmentStatus}
                   onChange={handleChange}
-                  required
                 >
                   {Object.values(EMPLOYMENT_STATUS).map((status) => (
                     <option key={status} value={status}>
@@ -787,7 +1098,6 @@ export default function EmployeeDirectoryClient({
                   type="date"
                   value={form.effectiveDate}
                   onChange={handleChange}
-                  required
                 />
               </div>
 
@@ -806,81 +1116,11 @@ export default function EmployeeDirectoryClient({
               </label>
             </section>
 
-            <section className="border-t border-slate-200 pt-7 dark:border-slate-800">
-              <h3 className="font-bold text-slate-950 dark:text-white">
-                การเตรียมบัญชีและอุปกรณ์
-              </h3>
-
-              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-                <input
-                  type="checkbox"
-                  name="submitToIT"
-                  checked={form.submitToIT}
-                  onChange={handleChange}
-                  className="mt-0.5 size-5 rounded border-slate-300 accent-amber-400"
-                />
-
-                <span>
-                  <span className="block text-sm font-bold text-slate-900 dark:text-white">
-                    ส่งคำขอให้ฝ่าย IT หลังบันทึก
-                  </span>
-                  <span className="mt-1 block text-xs leading-5 text-slate-600 dark:text-slate-400">
-                    IT จะได้รับงานสร้าง Domain, อีเมลบริษัท, ผู้ใช้เครื่องพิมพ์
-                    และจัดสรรอุปกรณ์
-                  </span>
-                </span>
-              </label>
-
-              <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                <SelectField
-                  label="อุปกรณ์ที่ต้องการ"
-                  name="deviceRequirement"
-                  value={form.deviceRequirement}
-                  onChange={handleChange}
-                  required
-                >
-                  {Object.values(DEVICE_REQUIREMENT).map((requirement) => (
-                    <option key={requirement} value={requirement}>
-                      {DEVICE_REQUIREMENT_LABELS[requirement].th}
-                    </option>
-                  ))}
-                </SelectField>
-
-                <Field
-                  label={
-                    form.deviceRequirement === DEVICE_REQUIREMENT.OTHER
-                      ? "รายละเอียดอุปกรณ์"
-                      : "รายละเอียดอุปกรณ์เพิ่มเติม"
-                  }
-                  name="deviceRequirementNotes"
-                  value={form.deviceRequirementNotes}
-                  onChange={handleChange}
-                  required={form.deviceRequirement === DEVICE_REQUIREMENT.OTHER}
-                  placeholder="เช่น Notebook สำหรับงานตัดต่อ"
-                />
-              </div>
-
-              <label className="mt-5 block">
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  หมายเหตุถึงฝ่าย IT
-                </span>
-                <textarea
-                  name="onboardingNotes"
-                  value={form.onboardingNotes}
-                  onChange={handleChange}
-                  rows={3}
-                  maxLength={2000}
-                  placeholder="ข้อมูลเพิ่มเติมสำหรับการเตรียมบัญชีหรืออุปกรณ์"
-                  className="mt-2 w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                />
-              </label>
-            </section>
-
             <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end dark:border-slate-800">
               <button
                 type="button"
                 onClick={closeDialog}
-                disabled={submitting}
+                disabled={submitting || departmentSubmitting}
                 className="min-h-12 rounded-xl border border-slate-300 px-5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 ยกเลิก
@@ -888,14 +1128,14 @@ export default function EmployeeDirectoryClient({
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || departmentSubmitting}
                 className="min-h-12 rounded-xl bg-amber-400 px-6 text-sm font-bold text-slate-950 hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60"
               >
                 {submitting
                   ? "กำลังบันทึก..."
-                  : form.submitToIT
-                    ? "บันทึกและส่งให้ IT"
-                    : "บันทึกเป็นแบบร่าง"}
+                  : editingEmployeeId
+                    ? "บันทึกการแก้ไข"
+                    : "บันทึกพนักงาน"}
               </button>
             </div>
           </form>

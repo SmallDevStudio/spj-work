@@ -6,6 +6,7 @@ import { AuthSessionError } from "@/lib/auth/auth-session-error";
 import { adminAuth } from "@/lib/firebase/admin";
 import { recordSuccessfulLogin } from "@/repositories/auth/access.repository";
 import { resolveUserAccess } from "@/services/auth/access.service";
+import { requireGoogleEmployeeAccess } from "@/services/auth/google-employee-access.service";
 
 const GOOGLE_PROVIDER_ID = "google.com";
 const PASSWORD_PROVIDER_ID = "password";
@@ -106,6 +107,14 @@ function validateIdentityProvider(decodedToken) {
   };
 }
 
+async function requireEmployeeAccessForGoogle(identity) {
+  if (identity.providerId !== GOOGLE_PROVIDER_ID) {
+    return;
+  }
+
+  await requireGoogleEmployeeAccess(identity);
+}
+
 export async function createApplicationSession({ idToken, requestContext }) {
   let decodedToken;
 
@@ -121,6 +130,8 @@ export async function createApplicationSession({ idToken, requestContext }) {
   requireRecentAuthentication(decodedToken);
 
   const identity = validateIdentityProvider(decodedToken);
+
+  await requireEmployeeAccessForGoogle(identity);
 
   const access = await resolveUserAccess(identity);
 
@@ -176,6 +187,8 @@ export async function verifyApplicationSession(sessionCookie) {
   }
 
   const identity = validateIdentityProvider(decodedClaims);
+
+  await requireEmployeeAccessForGoogle(identity);
 
   const access = await resolveUserAccess(identity);
 

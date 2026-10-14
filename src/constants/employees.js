@@ -173,7 +173,7 @@ export const EMPLOYEE_IMPORT_COLUMNS = Object.freeze({
   POSITION_TITLE: "positionTitle",
   DEPARTMENT: "department",
   MANAGER_EMAIL: "managerEmail",
-  EMPLOYEE_PIN: "employeePin",
+  PRINTER_CODE: "printerCode",
   NOTES: "notes",
   EMPLOYMENT_TYPE: "employmentType",
   EMPLOYMENT_STATUS: "employmentStatus",
@@ -190,15 +190,42 @@ export const REQUIRED_EMPLOYEE_IMPORT_COLUMNS = Object.freeze([
   EMPLOYEE_IMPORT_COLUMNS.PHONE_NUMBER,
   EMPLOYEE_IMPORT_COLUMNS.POSITION_TITLE,
   EMPLOYEE_IMPORT_COLUMNS.DEPARTMENT,
-  EMPLOYEE_IMPORT_COLUMNS.EMPLOYEE_PIN,
+  EMPLOYEE_IMPORT_COLUMNS.PRINTER_CODE,
+  EMPLOYEE_IMPORT_COLUMNS.WORK_EMAIL,
   EMPLOYEE_IMPORT_COLUMNS.EFFECTIVE_DATE,
 ]);
 
+export const MANAGER_ASSIGNMENT_TYPE = Object.freeze({
+  DEPARTMENT: "DEPARTMENT",
+  MANUAL: "MANUAL",
+  NONE: "NONE",
+});
+
+export const MANAGER_ASSIGNMENT_TYPE_LABELS = Object.freeze({
+  [MANAGER_ASSIGNMENT_TYPE.DEPARTMENT]: {
+    th: "ใช้หัวหน้าแผนก",
+    en: "Department manager",
+  },
+  [MANAGER_ASSIGNMENT_TYPE.MANUAL]: {
+    th: "กำหนดหัวหน้าเฉพาะบุคคล",
+    en: "Manual override",
+  },
+  [MANAGER_ASSIGNMENT_TYPE.NONE]: {
+    th: "ไม่มีหัวหน้างาน",
+    en: "No manager",
+  },
+});
+
+export const ALL_MANAGER_ASSIGNMENT_TYPES = Object.freeze(
+  Object.values(MANAGER_ASSIGNMENT_TYPE),
+);
+
 export const DEFAULT_EMPLOYEE_VALUES = Object.freeze({
   employmentType: EMPLOYMENT_TYPE.FULL_TIME,
-  employmentStatus: EMPLOYMENT_STATUS.ONBOARDING,
+  employmentStatus: EMPLOYMENT_STATUS.ACTIVE,
   gender: EMPLOYEE_GENDER.NOT_SPECIFIED,
   role: "EMPLOYEE",
+  managerAssignmentType: MANAGER_ASSIGNMENT_TYPE.DEPARTMENT,
 });
 
 export const EMPLOYEE_LIMITS = Object.freeze({
@@ -209,7 +236,7 @@ export const EMPLOYEE_LIMITS = Object.freeze({
   positionTitle: 150,
   email: 254,
   notes: 2000,
-  employeePinLength: 4,
+  printerCodeLength: 4,
   importRows: 5000,
   importFileSizeBytes: 10 * 1024 * 1024,
 });

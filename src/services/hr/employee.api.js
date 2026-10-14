@@ -38,3 +38,13 @@ export function getEmployeeApiErrorMessage(error) {
     "ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง"
   );
 }
+
+export async function updateEmployeeRequest({ employeeId, input }) {
+  const headers = await createStateChangingHeaders();
+
+  const response = await apiClient.put(`/hr/employees/${employeeId}`, input, {
+    headers,
+  });
+
+  return response.data?.data;
+}

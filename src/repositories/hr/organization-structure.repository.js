@@ -1,15 +1,9 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
-
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminFirestore } from "@/lib/firebase/admin";
 import { ApplicationError } from "@/lib/errors/application-error";
-
-function createStableKey(value) {
-  return createHash("sha256").update(value).digest("hex");
-}
+import { adminFirestore } from "@/lib/firebase/admin";
 
 function getOrganizationRef(organizationId) {
   return adminFirestore.collection("organizations").doc(organizationId);
@@ -24,6 +18,10 @@ function mapDocument(snapshot) {
     id: snapshot.id,
     ...snapshot.data(),
   };
+}
+
+function createInternalDepartmentCode(departmentId) {
+  return `DEP-${departmentId.slice(0, 8).toUpperCase()}`;
 }
 
 export async function getDepartmentById({ organizationId, departmentId }) {
@@ -48,37 +46,40 @@ export async function listDepartments({ organizationId, limit = 100 }) {
 export async function createDepartment({ organizationId, data, actor }) {
   const organizationRef = getOrganizationRef(organizationId);
   const departmentRef = organizationRef.collection("departments").doc();
-
-  const normalizedCode = data.code.trim().toUpperCase();
-  const codeKey = createStableKey(normalizedCode);
-
-  const codeKeyRef = organizationRef
-    .collection("departmentCodeKeys")
-    .doc(codeKey);
-
   const auditLogRef = organizationRef.collection("auditLogs").doc();
 
-  await adminFirestore.runTransaction(async (transaction) => {
-    const codeKeySnapshot = await transaction.get(codeKeyRef);
+  const internalCode = createInternalDepartmentCode(departmentRef.id);
 
-    if (codeKeySnapshot.exists) {
+  const managerRef = data.managerEmployeeId
+    ? organizationRef.collection("employees").doc(data.managerEmployeeId)
+    : null;
+
+  await adminFirestore.runTransaction(async (transaction) => {
+    const managerSnapshot = managerRef
+      ? await transaction.get(managerRef)
+      : null;
+
+    if (
+      managerSnapshot &&
+      (!managerSnapshot.exists || managerSnapshot.data()?.isDeleted === true)
+    ) {
       throw new ApplicationError({
-        code: "DEPARTMENT_CODE_ALREADY_EXISTS",
-        message: `รหัสแผนก ${normalizedCode} ถูกใช้งานแล้ว`,
-        status: 409,
+        code: "DEPARTMENT_MANAGER_NOT_AVAILABLE",
+        message: "ไม่พบข้อมูลพนักงานที่เลือกเป็นหัวหน้าแผนก",
+        status: 400,
       });
     }
 
-    const departmentData = {
+    transaction.set(departmentRef, {
       organizationId,
-      code: normalizedCode,
-      normalizedCode,
+      code: internalCode,
+      normalizedCode: internalCode,
       nameTh: data.nameTh,
-      nameEn: data.nameEn,
+      nameEn: null,
       description: data.description,
       managerEmployeeId: data.managerEmployeeId,
-      status: data.status,
-      sortOrder: data.sortOrder,
+      status: "ACTIVE",
+      sortOrder: 0,
       source: data.source,
       isDeleted: false,
       deletedAt: null,
@@ -87,17 +88,6 @@ export async function createDepartment({ organizationId, data, actor }) {
       createdBy: actor.uid,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor.uid,
-    };
-
-    transaction.set(departmentRef, departmentData);
-
-    transaction.set(codeKeyRef, {
-      organizationId,
-      entityType: "DEPARTMENT",
-      entityId: departmentRef.id,
-      normalizedCode,
-      createdAt: FieldValue.serverTimestamp(),
-      createdBy: actor.uid,
     });
 
     transaction.set(auditLogRef, {
@@ -111,13 +101,14 @@ export async function createDepartment({ organizationId, data, actor }) {
       entityType: "DEPARTMENT",
       entityId: departmentRef.id,
       source: "WEB",
-      summary: `Created department ${normalizedCode}.`,
+      summary: `Created department ${data.nameTh}.`,
       before: null,
       after: {
-        code: normalizedCode,
+        code: internalCode,
         nameTh: data.nameTh,
-        nameEn: data.nameEn,
-        status: data.status,
+        description: data.description,
+        managerEmployeeId: data.managerEmployeeId,
+        status: "ACTIVE",
       },
       metadata: null,
       createdAt: FieldValue.serverTimestamp(),
@@ -130,82 +121,77 @@ export async function createDepartment({ organizationId, data, actor }) {
   });
 }
 
-export async function getPositionById({ organizationId, positionId }) {
-  const positionSnapshot = await getOrganizationRef(organizationId)
-    .collection("positions")
-    .doc(positionId)
-    .get();
-
-  return mapDocument(positionSnapshot);
-}
-
-export async function listPositions({ organizationId, limit = 100 }) {
-  const positionSnapshots = await getOrganizationRef(organizationId)
-    .collection("positions")
-    .where("isDeleted", "==", false)
-    .limit(limit)
-    .get();
-
-  return positionSnapshots.docs.map(mapDocument);
-}
-
-export async function createPosition({ organizationId, data, actor }) {
+export async function updateDepartment({
+  organizationId,
+  departmentId,
+  data,
+  actor,
+}) {
   const organizationRef = getOrganizationRef(organizationId);
-  const positionRef = organizationRef.collection("positions").doc();
 
-  const normalizedCode = data.code.trim().toUpperCase();
+  const departmentRef = organizationRef
+    .collection("departments")
+    .doc(departmentId);
 
-  const uniqueCodeValue = `${data.departmentId}:${normalizedCode}`;
-  const codeKey = createStableKey(uniqueCodeValue);
-
-  const codeKeyRef = organizationRef
-    .collection("positionCodeKeys")
-    .doc(codeKey);
+  const managerRef = data.managerEmployeeId
+    ? organizationRef.collection("employees").doc(data.managerEmployeeId)
+    : null;
 
   const auditLogRef = organizationRef.collection("auditLogs").doc();
 
   await adminFirestore.runTransaction(async (transaction) => {
-    const codeKeySnapshot = await transaction.get(codeKeyRef);
+    const departmentSnapshot = await transaction.get(departmentRef);
 
-    if (codeKeySnapshot.exists) {
+    if (
+      !departmentSnapshot.exists ||
+      departmentSnapshot.data()?.isDeleted === true
+    ) {
       throw new ApplicationError({
-        code: "POSITION_CODE_ALREADY_EXISTS",
-        message: `รหัสตำแหน่ง ${normalizedCode} ถูกใช้งานในแผนกนี้แล้ว`,
-        status: 409,
+        code: "DEPARTMENT_NOT_FOUND",
+        message: "ไม่พบข้อมูลแผนก",
+        status: 404,
       });
     }
 
-    const positionData = {
-      organizationId,
-      departmentId: data.departmentId,
-      code: normalizedCode,
-      normalizedCode,
-      nameTh: data.nameTh,
-      nameEn: data.nameEn,
-      description: data.description,
-      status: data.status,
-      sortOrder: data.sortOrder,
-      source: data.source,
-      isDeleted: false,
-      deletedAt: null,
-      deletedBy: null,
-      createdAt: FieldValue.serverTimestamp(),
-      createdBy: actor.uid,
+    const currentDepartment = departmentSnapshot.data();
+
+    const managerSnapshot = managerRef
+      ? await transaction.get(managerRef)
+      : null;
+
+    if (
+      managerSnapshot &&
+      (!managerSnapshot.exists || managerSnapshot.data()?.isDeleted === true)
+    ) {
+      throw new ApplicationError({
+        code: "DEPARTMENT_MANAGER_NOT_AVAILABLE",
+        message: "ไม่พบข้อมูลพนักงานที่เลือกเป็นหัวหน้าแผนก",
+        status: 400,
+      });
+    }
+
+    const updateData = {
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor.uid,
     };
 
-    transaction.set(positionRef, positionData);
+    if (data.nameTh !== undefined) {
+      updateData.nameTh = data.nameTh;
+    }
 
-    transaction.set(codeKeyRef, {
-      organizationId,
-      entityType: "POSITION",
-      entityId: positionRef.id,
-      departmentId: data.departmentId,
-      normalizedCode,
-      createdAt: FieldValue.serverTimestamp(),
-      createdBy: actor.uid,
-    });
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+
+    if (data.managerEmployeeId !== undefined) {
+      updateData.managerEmployeeId = data.managerEmployeeId;
+    }
+
+    if (data.status !== undefined) {
+      updateData.status = data.status;
+    }
+
+    transaction.update(departmentRef, updateData);
 
     transaction.set(auditLogRef, {
       organizationId,
@@ -214,26 +200,36 @@ export async function createPosition({ organizationId, data, actor }) {
         email: actor.email,
         role: actor.role,
       },
-      action: "POSITION_CREATE",
-      entityType: "POSITION",
-      entityId: positionRef.id,
+      action: "DEPARTMENT_UPDATE",
+      entityType: "DEPARTMENT",
+      entityId: departmentId,
       source: "WEB",
-      summary: `Created position ${normalizedCode}.`,
-      before: null,
+      summary: `Updated department ${data.nameTh ?? currentDepartment.nameTh}.`,
+      before: {
+        nameTh: currentDepartment.nameTh,
+        description: currentDepartment.description ?? null,
+        managerEmployeeId: currentDepartment.managerEmployeeId ?? null,
+        status: currentDepartment.status,
+      },
       after: {
-        departmentId: data.departmentId,
-        code: normalizedCode,
-        nameTh: data.nameTh,
-        nameEn: data.nameEn,
-        status: data.status,
+        nameTh: data.nameTh ?? currentDepartment.nameTh,
+        description:
+          data.description !== undefined
+            ? data.description
+            : (currentDepartment.description ?? null),
+        managerEmployeeId:
+          data.managerEmployeeId !== undefined
+            ? data.managerEmployeeId
+            : (currentDepartment.managerEmployeeId ?? null),
+        status: data.status ?? currentDepartment.status,
       },
       metadata: null,
       createdAt: FieldValue.serverTimestamp(),
     });
   });
 
-  return getPositionById({
+  return getDepartmentById({
     organizationId,
-    positionId: positionRef.id,
+    departmentId,
   });
 }

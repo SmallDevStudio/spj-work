@@ -4,13 +4,17 @@ import { z } from "zod";
 
 import { ALL_EMPLOYMENT_STATUSES } from "@/constants/employees";
 import { ApplicationError } from "@/lib/errors/application-error";
-import { formatEmployeeValidationErrors } from "@/lib/validation/employee.schema";
 import {
-  employeeWithOnboardingCreateSchema,
-  formatOnboardingValidationErrors,
-} from "@/lib/validation/onboarding.schema";
-import { createEmployeeAndOnboarding } from "@/repositories/hr/employee-onboarding.repository";
-import { listEmployees } from "@/repositories/hr/employee.repository";
+  employeeCreateSchema,
+  formatEmployeeValidationErrors,
+} from "@/lib/validation/employee.schema";
+import {
+  createEmployee,
+  listEmployees,
+  updateEmployee,
+} from "@/repositories/hr/employee.repository";
+
+import { PERMISSIONS } from "@/constants/permissions";
 
 const employeeListQuerySchema = z.object({
   status: z
@@ -73,6 +77,20 @@ function createActor(currentSession) {
   };
 }
 
+function applyEmployeeFieldPermissions(employee, currentSession) {
+  const canReadPrinterCode = currentSession.access.permissions.includes(
+    PERMISSIONS.PRINTER_CODE_READ,
+  );
+
+  if (canReadPrinterCode) {
+    return employee;
+  }
+
+  const { printerCode, ...safeEmployee } = employee;
+
+  return safeEmployee;
+}
+
 export async function getEmployeeList({ currentSession, query }) {
   const validationResult = employeeListQuerySchema.safeParse(query);
 
@@ -112,25 +130,61 @@ export async function getEmployeeList({ currentSession, query }) {
 
       return employeeMatchesSearch(employee, search);
     })
-    .sort(sortEmployees);
+    .sort(sortEmployees)
+    .map((employee) => applyEmployeeFieldPermissions(employee, currentSession));
 }
 
 export async function addEmployee({ currentSession, input }) {
-  const validationResult = employeeWithOnboardingCreateSchema.safeParse(input);
+  const validationResult = employeeCreateSchema.safeParse(input);
 
   if (!validationResult.success) {
     throw new ApplicationError({
       code: "VALIDATION_ERROR",
-      message: "ข้อมูลพนักงานหรือ Onboarding ไม่ถูกต้อง",
+      message: "ข้อมูลพนักงานไม่ถูกต้อง",
       status: 400,
-      details: formatOnboardingValidationErrors(validationResult.error),
+      details: formatEmployeeValidationErrors(validationResult.error),
     });
   }
 
-  return createEmployeeAndOnboarding({
+  return createEmployee({
     organizationId: currentSession.access.organization.id,
-    employeeInput: validationResult.data.employee,
-    onboardingInput: validationResult.data.onboarding,
+    employeeInput: validationResult.data,
+    actor: createActor(currentSession),
+  });
+}
+
+export async function updateEmployeeDetails({
+  currentSession,
+  employeeId,
+  input,
+}) {
+  if (
+    typeof employeeId !== "string" ||
+    !employeeId.trim() ||
+    employeeId.length > 128
+  ) {
+    throw new ApplicationError({
+      code: "INVALID_EMPLOYEE_ID",
+      message: "รหัสอ้างอิงพนักงานไม่ถูกต้อง",
+      status: 400,
+    });
+  }
+
+  const validationResult = employeeCreateSchema.safeParse(input);
+
+  if (!validationResult.success) {
+    throw new ApplicationError({
+      code: "VALIDATION_ERROR",
+      message: "ข้อมูลพนักงานไม่ถูกต้อง",
+      status: 400,
+      details: formatEmployeeValidationErrors(validationResult.error),
+    });
+  }
+
+  return updateEmployee({
+    organizationId: currentSession.access.organization.id,
+    employeeId: employeeId.trim(),
+    employeeInput: validationResult.data,
     actor: createActor(currentSession),
   });
 }

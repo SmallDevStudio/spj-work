@@ -38,3 +38,17 @@ export function getApiErrorMessage(error) {
     "ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง"
   );
 }
+
+export async function updateDepartmentRequest({ departmentId, input }) {
+  const headers = await createStateChangingHeaders();
+
+  const response = await apiClient.put(
+    `/hr/departments/${departmentId}`,
+    input,
+    {
+      headers,
+    },
+  );
+
+  return response.data?.data?.item;
+}

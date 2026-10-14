@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
   HiOutlinePlus,
+  HiOutlineUser,
   HiOutlineXMark,
+  HiOutlinePencilSquare,
 } from "react-icons/hi2";
 
 import {
@@ -15,16 +17,13 @@ import {
 import {
   createDepartmentRequest,
   getApiErrorMessage,
+  updateDepartmentRequest,
 } from "@/services/hr/organization-structure.api";
 
 const initialDepartmentForm = {
-  code: "",
   nameTh: "",
-  nameEn: "",
   description: "",
-  managerEmployeeId: null,
-  status: MASTER_DATA_STATUS.ACTIVE,
-  sortOrder: 0,
+  managerEmployeeId: "",
 };
 
 function StatusBadge({ status }) {
@@ -60,27 +59,6 @@ function Modal({ children, onClose }) {
         aria-label="เพิ่มแผนก"
         className="relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl sm:max-w-2xl sm:rounded-[2rem] dark:bg-slate-900"
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7 dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <h2 className="text-xl font-bold text-slate-950 dark:text-white">
-              เพิ่มแผนก
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              สร้างแผนกใหม่ในโครงสร้างบริษัท
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="ปิด"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <HiOutlineXMark className="size-6" aria-hidden="true" />
-          </button>
-        </div>
-
         {children}
       </section>
     </div>
@@ -93,28 +71,22 @@ function Field({
   value,
   onChange,
   required = false,
-  type = "text",
   placeholder = "",
-  min,
-  max,
 }) {
   return (
     <label className="block">
       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label}
-
         {required ? <span className="ml-1 text-red-500">*</span> : null}
       </span>
 
       <input
-        type={type}
+        type="text"
         name={name}
         value={value}
         onChange={onChange}
         required={required}
         placeholder={placeholder}
-        min={min}
-        max={max}
         className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
       />
     </label>
@@ -123,17 +95,44 @@ function Field({
 
 export default function OrganizationStructureClient({
   departments,
+  employees,
   canManage,
 }) {
   const router = useRouter();
 
+  const [editingDepartmentId, setEditingDepartmentId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [departmentForm, setDepartmentForm] = useState(initialDepartmentForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const employeeMap = useMemo(
+    () =>
+      new Map(
+        employees.map((employee) => [
+          employee.id,
+          employee.displayName || employee.employeeCode,
+        ]),
+      ),
+    [employees],
+  );
+
   function openDialog() {
+    setEditingDepartmentId(null);
     setDepartmentForm(initialDepartmentForm);
+    setFormError("");
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(department) {
+    setEditingDepartmentId(department.id);
+
+    setDepartmentForm({
+      nameTh: department.nameTh ?? "",
+      description: department.description ?? "",
+      managerEmployeeId: department.managerEmployeeId ?? "",
+    });
+
     setFormError("");
     setDialogOpen(true);
   }
@@ -143,7 +142,9 @@ export default function OrganizationStructureClient({
       return;
     }
 
+    setEditingDepartmentId(null);
     setDialogOpen(false);
+    setDepartmentForm(initialDepartmentForm);
     setFormError("");
   }
 
@@ -152,7 +153,7 @@ export default function OrganizationStructureClient({
 
     setDepartmentForm((currentForm) => ({
       ...currentForm,
-      [name]: name === "sortOrder" ? Number(value) : value,
+      [name]: value,
     }));
   }
 
@@ -163,12 +164,22 @@ export default function OrganizationStructureClient({
     setFormError("");
 
     try {
-      await createDepartmentRequest({
-        ...departmentForm,
-        nameEn: departmentForm.nameEn || null,
-        description: departmentForm.description || null,
-      });
+      const input = {
+        nameTh: departmentForm.nameTh,
+        description: departmentForm.description.trim() || null,
+        managerEmployeeId: departmentForm.managerEmployeeId || null,
+      };
 
+      if (editingDepartmentId) {
+        await updateDepartmentRequest({
+          departmentId: editingDepartmentId,
+          input,
+        });
+      } else {
+        await createDepartmentRequest(input);
+      }
+
+      setEditingDepartmentId(null);
       setDialogOpen(false);
       setDepartmentForm(initialDepartmentForm);
       router.refresh();
@@ -188,13 +199,13 @@ export default function OrganizationStructureClient({
               Organization Structure
             </p>
 
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              แผนก
-            </h2>
+            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+              ข้อมูลแผนก
+            </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              จัดการแผนกสำหรับข้อมูลพนักงาน สายบังคับบัญชา
-              และขั้นตอนอนุมัติภายในบริษัท
+              จัดการแผนกและหัวหน้าแผนก
+              ซึ่งระบบจะนำไปใช้เป็นหัวหน้างานเริ่มต้นของพนักงาน
             </p>
           </div>
 
@@ -214,12 +225,12 @@ export default function OrganizationStructureClient({
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                Department Master
+                Department
               </p>
 
-              <h3 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+              <h2 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
                 แผนกทั้งหมด
-              </h3>
+              </h2>
             </div>
 
             <span className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
@@ -259,26 +270,52 @@ export default function OrganizationStructureClient({
                       />
                     </div>
 
-                    <StatusBadge status={department.status} />
+                    <div className="flex flex-col items-end gap-2">
+                      <StatusBadge status={department.status} />
+
+                      {canManage ? (
+                        <button
+                          type="button"
+                          onClick={() => openEditDialog(department)}
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
+                        >
+                          <HiOutlinePencilSquare
+                            className="size-4"
+                            aria-hidden="true"
+                          />
+                          แก้ไข
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
 
-                  <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-                    {department.code}
-                  </p>
-
-                  <h3 className="mt-2 text-lg font-bold text-slate-950 dark:text-white">
+                  <h3 className="mt-5 text-lg font-bold text-slate-950 dark:text-white">
                     {department.nameTh}
                   </h3>
 
-                  {department.nameEn ? (
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {department.nameEn}
-                    </p>
-                  ) : null}
-
-                  <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {department.description || "ยังไม่มีรายละเอียด"}
+                  <p className="mt-3 min-h-12 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    {department.description || "ยังไม่มีรายละเอียดแผนก"}
                   </p>
+
+                  <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      หัวหน้าแผนก
+                    </p>
+
+                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <HiOutlineUser
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+
+                      <span className="truncate">
+                        {department.managerEmployeeId
+                          ? employeeMap.get(department.managerEmployeeId) ||
+                            "ไม่พบข้อมูลพนักงาน"
+                          : "ยังไม่กำหนด"}
+                      </span>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
@@ -288,6 +325,29 @@ export default function OrganizationStructureClient({
 
       {dialogOpen ? (
         <Modal onClose={closeDialog}>
+          <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-5 sm:px-7 dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <h2 className="text-xl font-bold text-slate-950 dark:text-white">
+                {editingDepartmentId ? "แก้ไขข้อมูลแผนก" : "เพิ่มแผนก"}
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {editingDepartmentId
+                  ? "แก้ไขชื่อ รายละเอียด และหัวหน้าแผนก"
+                  : "ระบุชื่อ รายละเอียด และหัวหน้าแผนก"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeDialog}
+              aria-label="ปิด"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <HiOutlineXMark className="size-6" aria-hidden="true" />
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5 px-5 py-6 sm:px-7">
             {formError ? (
               <div
@@ -298,45 +358,35 @@ export default function OrganizationStructureClient({
               </div>
             ) : null}
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field
-                label="รหัสแผนก"
-                name="code"
-                value={departmentForm.code}
-                onChange={handleChange}
-                placeholder="เช่น HR"
-                required
-              />
+            <Field
+              label="ชื่อแผนก"
+              name="nameTh"
+              value={departmentForm.nameTh}
+              onChange={handleChange}
+              placeholder="เช่น บัญชี"
+              required
+            />
 
-              <Field
-                label="ลำดับการแสดงผล"
-                name="sortOrder"
-                type="number"
-                min={0}
-                max={9999}
-                value={departmentForm.sortOrder}
-                onChange={handleChange}
-              />
-            </div>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                หัวหน้าแผนก
+              </span>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field
-                label="ชื่อแผนกภาษาไทย"
-                name="nameTh"
-                value={departmentForm.nameTh}
+              <select
+                name="managerEmployeeId"
+                value={departmentForm.managerEmployeeId}
                 onChange={handleChange}
-                placeholder="เช่น ทรัพยากรบุคคล"
-                required
-              />
+                className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option value="">ยังไม่กำหนดหัวหน้าแผนก</option>
 
-              <Field
-                label="ชื่อแผนกภาษาอังกฤษ"
-                name="nameEn"
-                value={departmentForm.nameEn}
-                onChange={handleChange}
-                placeholder="เช่น Human Resources"
-              />
-            </div>
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.employeeCode} — {employee.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="block">
               <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -347,8 +397,9 @@ export default function OrganizationStructureClient({
                 name="description"
                 value={departmentForm.description}
                 onChange={handleChange}
-                placeholder="รายละเอียดหน้าที่ของแผนก"
                 rows={4}
+                maxLength={500}
+                placeholder="รายละเอียดหรือหน้าที่ของแผนก"
                 className="mt-2 w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
             </label>
@@ -368,7 +419,11 @@ export default function OrganizationStructureClient({
                 disabled={submitting}
                 className="min-h-12 rounded-xl bg-amber-400 px-6 text-sm font-bold text-slate-950 hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60"
               >
-                {submitting ? "กำลังบันทึก..." : "บันทึกแผนก"}
+                {submitting
+                  ? "กำลังบันทึก..."
+                  : editingDepartmentId
+                    ? "บันทึกการแก้ไข"
+                    : "บันทึกแผนก"}
               </button>
             </div>
           </form>

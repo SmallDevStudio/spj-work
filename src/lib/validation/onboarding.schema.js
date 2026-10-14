@@ -6,7 +6,6 @@ import {
   DEVICE_REQUIREMENT,
   ONBOARDING_LIMITS,
 } from "@/constants/onboarding";
-import { employeeCreateSchema } from "@/lib/validation/employee.schema";
 
 function emptyValueToNull(value) {
   if (value === undefined || value === null) {
@@ -89,13 +88,6 @@ export const onboardingCreateDetailsSchema = z
       });
     }
   });
-
-export const employeeWithOnboardingCreateSchema = z
-  .object({
-    employee: employeeCreateSchema,
-    onboarding: onboardingCreateDetailsSchema,
-  })
-  .strict();
 
 export const onboardingStartSchema = z
   .object({

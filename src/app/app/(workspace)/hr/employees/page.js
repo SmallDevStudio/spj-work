@@ -44,15 +44,18 @@ function serializeEmployee(employee) {
     phoneNumber: employee.phoneNumber ?? null,
     positionTitle: employee.positionTitle,
     departmentId: employee.departmentId,
+    managerAssignmentType: employee.managerAssignmentType ?? "DEPARTMENT",
+    effectiveManagerEmployeeId: employee.effectiveManagerEmployeeId ?? null,
+    effectiveManagerSource: employee.effectiveManagerSource ?? "DEPARTMENT",
     managerEmployeeId: employee.managerEmployeeId ?? null,
     notes: employee.notes ?? null,
     employmentType: employee.employmentType,
     employmentStatus: employee.employmentStatus,
     effectiveDate: employee.effectiveDate,
     workEmail: employee.workEmail ?? null,
+    printerCode: employee.printerCode ?? null,
     role: employee.role,
     accessStatus: employee.accessStatus,
-    hasEmployeePin: Boolean(employee.hasEmployeePin),
     createdAt: serializeDate(employee.createdAt),
     updatedAt: serializeDate(employee.updatedAt),
   };
@@ -64,6 +67,8 @@ function serializeDepartment(department) {
     code: department.code,
     nameTh: department.nameTh,
     nameEn: department.nameEn ?? null,
+    managerEmployeeId: department.managerEmployeeId ?? null,
+    description: department.description ?? null,
     status: department.status,
   };
 }
@@ -98,16 +103,23 @@ export default async function EmployeesPage() {
 
   const permissions = currentSession.access.permissions;
 
-  const canCreate =
-    permissions.includes(PERMISSIONS.EMPLOYEE_CREATE) &&
-    permissions.includes(PERMISSIONS.EMPLOYEE_PIN_CREATE) &&
-    permissions.includes(PERMISSIONS.ONBOARDING_CREATE);
+  const canManageDepartments = permissions.includes(
+    PERMISSIONS.DEPARTMENT_MANAGE,
+  );
+
+  const canCreate = permissions.includes(PERMISSIONS.EMPLOYEE_CREATE);
+
+  const canEdit =
+    permissions.includes(PERMISSIONS.EMPLOYEE_UPDATE) &&
+    permissions.includes(PERMISSIONS.PRINTER_CODE_UPDATE);
 
   return (
     <EmployeeDirectoryClient
       employees={employees.map(serializeEmployee)}
       departments={departments.map(serializeDepartment)}
       canCreate={canCreate}
+      canEdit={canEdit}
+      canManageDepartments={canManageDepartments}
     />
   );
 }

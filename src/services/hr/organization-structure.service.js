@@ -5,11 +5,13 @@ import { ApplicationError } from "@/lib/errors/application-error";
 import {
   departmentCreateSchema,
   departmentListQuerySchema,
+  departmentUpdateSchema,
   formatOrganizationStructureValidationErrors,
 } from "@/lib/validation/organization-structure.schema";
 import {
   createDepartment,
   listDepartments,
+  updateDepartment,
 } from "@/repositories/hr/organization-structure.repository";
 
 function normalizeSearchValue(value) {
@@ -109,6 +111,40 @@ export async function addDepartment({ currentSession, input }) {
       ...validationResult.data,
       source: ORGANIZATION_STRUCTURE_SOURCE.MANUAL,
     },
+    actor: createActor(currentSession),
+  });
+}
+
+export async function editDepartment({ currentSession, departmentId, input }) {
+  if (
+    typeof departmentId !== "string" ||
+    !departmentId.trim() ||
+    departmentId.length > 128
+  ) {
+    throw new ApplicationError({
+      code: "INVALID_DEPARTMENT_ID",
+      message: "รหัสอ้างอิงแผนกไม่ถูกต้อง",
+      status: 400,
+    });
+  }
+
+  const validationResult = departmentUpdateSchema.safeParse(input);
+
+  if (!validationResult.success) {
+    throw new ApplicationError({
+      code: "VALIDATION_ERROR",
+      message: "ข้อมูลแผนกไม่ถูกต้อง",
+      status: 400,
+      details: formatOrganizationStructureValidationErrors(
+        validationResult.error,
+      ),
+    });
+  }
+
+  return updateDepartment({
+    organizationId: currentSession.access.organization.id,
+    departmentId: departmentId.trim(),
+    data: validationResult.data,
     actor: createActor(currentSession),
   });
 }

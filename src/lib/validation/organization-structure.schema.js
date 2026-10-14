@@ -18,56 +18,18 @@ function emptyValueToNull(value) {
   return value;
 }
 
-function normalizeCode(value) {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  return value.trim().toUpperCase();
-}
-
-const departmentCodeSchema = z.preprocess(
-  normalizeCode,
-  z
-    .string({
-      required_error: "กรุณากรอกรหัสแผนก",
-    })
-    .trim()
-    .min(1, "กรุณากรอกรหัสแผนก")
-    .max(
-      ORGANIZATION_STRUCTURE_LIMITS.code,
-      `รหัสแผนกต้องไม่เกิน ${ORGANIZATION_STRUCTURE_LIMITS.code} ตัวอักษร`,
-    )
-    .regex(
-      /^[A-Z0-9._/-]+$/,
-      "รหัสแผนกใช้ได้เฉพาะตัวอักษรภาษาอังกฤษ ตัวเลข จุด ขีดกลาง ขีดล่าง และเครื่องหมายทับ",
-    ),
-);
-
-const thaiNameSchema = z.preprocess(
+const departmentNameSchema = z.preprocess(
   (value) => (typeof value === "string" ? value.trim() : value),
   z
     .string({
-      required_error: "กรุณากรอกชื่อแผนกภาษาไทย",
+      required_error: "กรุณากรอกชื่อแผนก",
     })
     .trim()
-    .min(1, "กรุณากรอกชื่อแผนกภาษาไทย")
+    .min(1, "กรุณากรอกชื่อแผนก")
     .max(
       ORGANIZATION_STRUCTURE_LIMITS.name,
       `ชื่อแผนกต้องไม่เกิน ${ORGANIZATION_STRUCTURE_LIMITS.name} ตัวอักษร`,
     ),
-);
-
-const englishNameSchema = z.preprocess(
-  emptyValueToNull,
-  z
-    .string()
-    .trim()
-    .max(
-      ORGANIZATION_STRUCTURE_LIMITS.name,
-      `ชื่อภาษาอังกฤษต้องไม่เกิน ${ORGANIZATION_STRUCTURE_LIMITS.name} ตัวอักษร`,
-    )
-    .nullable(),
 );
 
 const descriptionSchema = z.preprocess(
@@ -100,42 +62,18 @@ const statusSchema = z
   })
   .default(MASTER_DATA_STATUS.ACTIVE);
 
-const sortOrderSchema = z.coerce
-  .number({
-    invalid_type_error: "ลำดับการแสดงผลต้องเป็นตัวเลข",
-  })
-  .int("ลำดับการแสดงผลต้องเป็นจำนวนเต็ม")
-  .min(
-    ORGANIZATION_STRUCTURE_LIMITS.sortOrderMinimum,
-    `ลำดับต้องไม่น้อยกว่า ${ORGANIZATION_STRUCTURE_LIMITS.sortOrderMinimum}`,
-  )
-  .max(
-    ORGANIZATION_STRUCTURE_LIMITS.sortOrderMaximum,
-    `ลำดับต้องไม่เกิน ${ORGANIZATION_STRUCTURE_LIMITS.sortOrderMaximum}`,
-  )
-  .default(0);
-
-export const departmentCreateSchema = z
-  .object({
-    code: departmentCodeSchema,
-    nameTh: thaiNameSchema,
-    nameEn: englishNameSchema.default(null),
-    description: descriptionSchema.default(null),
-    managerEmployeeId: managerEmployeeIdSchema.default(null),
-    status: statusSchema,
-    sortOrder: sortOrderSchema,
-  })
-  .strict();
+export const departmentCreateSchema = z.object({
+  nameTh: departmentNameSchema,
+  description: descriptionSchema.default(null),
+  managerEmployeeId: managerEmployeeIdSchema.default(null),
+});
 
 export const departmentUpdateSchema = z
   .object({
-    code: departmentCodeSchema.optional(),
-    nameTh: thaiNameSchema.optional(),
-    nameEn: englishNameSchema.optional(),
+    nameTh: departmentNameSchema.optional(),
     description: descriptionSchema.optional(),
     managerEmployeeId: managerEmployeeIdSchema.optional(),
     status: statusSchema.optional(),
-    sortOrder: sortOrderSchema.optional(),
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {

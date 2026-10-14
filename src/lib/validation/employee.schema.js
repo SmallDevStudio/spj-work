@@ -5,8 +5,10 @@ import {
   ALL_EMPLOYEE_GENDERS,
   ALL_EMPLOYMENT_STATUSES,
   ALL_EMPLOYMENT_TYPES,
+  ALL_MANAGER_ASSIGNMENT_TYPES,
   DEFAULT_EMPLOYEE_VALUES,
   EMPLOYEE_LIMITS,
+  MANAGER_ASSIGNMENT_TYPE,
 } from "@/constants/employees";
 import { ROLES } from "@/constants/roles";
 
@@ -42,14 +44,21 @@ function emptyValueToNull(value) {
   return normalizedValue;
 }
 
-function normalizeEmployeePin(value) {
+function createOptionalTextSchema({ maximum, message }) {
+  return z.preprocess(
+    emptyValueToNull,
+    z.string().trim().max(maximum, message).nullable(),
+  );
+}
+
+function normalizePrinterCode(value) {
   if (
     typeof value === "number" &&
     Number.isInteger(value) &&
     value >= 0 &&
     value <= 9999
   ) {
-    return String(value).padStart(EMPLOYEE_LIMITS.employeePinLength, "0");
+    return String(value).padStart(EMPLOYEE_LIMITS.printerCodeLength, "0");
   }
 
   if (typeof value === "string") {
@@ -160,75 +169,66 @@ const genderSchema = z.preprocess(
 );
 
 const birthDateSchema = z
-  .preprocess(
-    normalizeText,
-    z
-      .string({
-        required_error: "กรุณาระบุวันเดือนปีเกิด",
-      })
-      .trim()
-      .min(1, "กรุณาระบุวันเดือนปีเกิด"),
-  )
-  .refine(isValidISODate, {
+  .preprocess(emptyValueToNull, z.string().trim().nullable())
+  .refine((value) => value === null || isValidISODate(value), {
     message: "วันเดือนปีเกิดต้องอยู่ในรูปแบบ YYYY-MM-DD",
   })
-  .refine((value) => !isFutureDate(value), {
+  .refine((value) => value === null || !isFutureDate(value), {
     message: "วันเดือนปีเกิดต้องไม่เป็นวันที่ในอนาคต",
   });
 
 const phoneNumberSchema = z.preprocess(
-  normalizeText,
+  emptyValueToNull,
   z
-    .string({
-      required_error: "กรุณากรอกเบอร์โทรศัพท์",
-    })
+    .string()
     .trim()
-    .min(1, "กรุณากรอกเบอร์โทรศัพท์")
     .max(
       EMPLOYEE_LIMITS.phoneNumber,
       `เบอร์โทรศัพท์ต้องไม่เกิน ${EMPLOYEE_LIMITS.phoneNumber} ตัวอักษร`,
     )
-    .regex(/^[0-9+\-()\s]+$/, "เบอร์โทรศัพท์มีตัวอักษรที่ไม่รองรับ"),
+    .regex(/^[0-9+\-()\s]+$/, "เบอร์โทรศัพท์มีตัวอักษรที่ไม่รองรับ")
+    .nullable(),
 );
 
-const positionTitleSchema = z.preprocess(
-  normalizeText,
-  z
-    .string({
-      required_error: "กรุณากรอกตำแหน่ง",
-    })
-    .trim()
-    .min(1, "กรุณากรอกตำแหน่ง")
-    .max(
-      EMPLOYEE_LIMITS.positionTitle,
-      `ตำแหน่งต้องไม่เกิน ${EMPLOYEE_LIMITS.positionTitle} ตัวอักษร`,
-    ),
-);
+const positionTitleSchema = createOptionalTextSchema({
+  maximum: EMPLOYEE_LIMITS.positionTitle,
+  message: `ตำแหน่งต้องไม่เกิน ${EMPLOYEE_LIMITS.positionTitle} ตัวอักษร`,
+});
 
-const requiredDepartmentIdSchema = z.preprocess(
-  normalizeText,
-  z
-    .string({
-      required_error: "กรุณาเลือกแผนก",
-    })
-    .trim()
-    .min(1, "กรุณาเลือกแผนก")
-    .max(128, "รหัสแผนกไม่ถูกต้อง"),
-);
-
-const managerEmployeeIdSchema = z.preprocess(
+const departmentIdSchema = z.preprocess(
   emptyValueToNull,
   z.string().trim().min(1).max(128).nullable(),
 );
 
-const employeePinSchema = z.preprocess(
-  normalizeEmployeePin,
+const managerEmployeeIdSchema = z.preprocess(
+  emptyValueToNull,
   z
-    .string({
-      required_error: "กรุณากรอกรหัส 4 หลัก",
-    })
-    .length(EMPLOYEE_LIMITS.employeePinLength, "รหัสต้องมีตัวเลข 4 หลัก")
-    .regex(/^\d{4}$/, "รหัสต้องเป็นตัวเลข 4 หลัก"),
+    .string()
+    .trim()
+    .min(1, "รหัสหัวหน้างานไม่ถูกต้อง")
+    .max(128, "รหัสหัวหน้างานไม่ถูกต้อง")
+    .nullable(),
+);
+
+const managerAssignmentTypeSchema = z
+  .enum(ALL_MANAGER_ASSIGNMENT_TYPES, {
+    errorMap: () => ({
+      message: `รูปแบบการกำหนดหัวหน้าต้องเป็น ${ALL_MANAGER_ASSIGNMENT_TYPES.join(", ")}`,
+    }),
+  })
+  .default(DEFAULT_EMPLOYEE_VALUES.managerAssignmentType);
+
+const printerCodeSchema = z.preprocess(
+  emptyValueToNull,
+  z
+    .string()
+    .trim()
+    .length(
+      EMPLOYEE_LIMITS.printerCodeLength,
+      "รหัส Printer ต้องมีตัวเลข 4 หลัก",
+    )
+    .regex(/^\d{4}$/, "รหัส Printer ต้องเป็นตัวเลข 4 หลัก")
+    .nullable(),
 );
 
 const notesSchema = z.preprocess(
@@ -274,34 +274,28 @@ const employmentStatusSchema = z.preprocess(
 );
 
 const effectiveDateSchema = z
+  .preprocess(emptyValueToNull, z.string().trim().nullable())
+  .refine((value) => value === null || isValidISODate(value), {
+    message: "วันที่มีผลต้องอยู่ในรูปแบบ YYYY-MM-DD",
+  });
+
+const requiredWorkEmailSchema = z
   .preprocess(
     normalizeText,
     z
       .string({
-        required_error: "กรุณาระบุวันที่มีผล",
+        required_error: "กรุณากรอกอีเมลบริษัท",
       })
       .trim()
-      .min(1, "กรุณาระบุวันที่มีผล"),
-  )
-  .refine(isValidISODate, {
-    message: "วันที่มีผลต้องอยู่ในรูปแบบ YYYY-MM-DD",
-  });
-
-const optionalWorkEmailSchema = z
-  .preprocess(
-    emptyValueToNull,
-    z
-      .string()
-      .trim()
+      .min(1, "กรุณากรอกอีเมลบริษัท")
       .max(
         EMPLOYEE_LIMITS.email,
         `อีเมลต้องไม่เกิน ${EMPLOYEE_LIMITS.email} ตัวอักษร`,
       )
-      .email("รูปแบบอีเมลไม่ถูกต้อง")
-      .nullable(),
+      .email("รูปแบบอีเมลไม่ถูกต้อง"),
   )
-  .transform((value) => value?.toLowerCase() ?? null)
-  .refine((value) => value === null || isCompanyEmail(value), {
+  .transform((value) => value.toLowerCase())
+  .refine(isCompanyEmail, {
     message: `ต้องใช้อีเมล @${APP_CONFIG.emailDomain} เท่านั้น`,
   });
 
@@ -323,23 +317,50 @@ export const employeeCreateSchema = z
     employeeCode: employeeCodeSchema,
     firstName: firstNameSchema,
     lastName: lastNameSchema,
+    workEmail: requiredWorkEmailSchema,
+
     gender: genderSchema,
-    birthDate: birthDateSchema,
-    phoneNumber: phoneNumberSchema,
-    positionTitle: positionTitleSchema,
-    departmentId: requiredDepartmentIdSchema,
+    birthDate: birthDateSchema.default(null),
+    phoneNumber: phoneNumberSchema.default(null),
+    positionTitle: positionTitleSchema.default(null),
+    departmentId: departmentIdSchema.default(null),
+
+    managerAssignmentType: managerAssignmentTypeSchema,
     managerEmployeeId: managerEmployeeIdSchema.default(null),
-    employeePin: employeePinSchema,
+
+    printerCode: printerCodeSchema.default(null),
     notes: notesSchema.default(null),
     employmentType: employmentTypeSchema,
     employmentStatus: employmentStatusSchema,
-    effectiveDate: effectiveDateSchema,
-    workEmail: optionalWorkEmailSchema.default(null),
+    effectiveDate: effectiveDateSchema.default(null),
     role: employeeRoleSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((data, context) => {
+    if (
+      data.managerAssignmentType === MANAGER_ASSIGNMENT_TYPE.MANUAL &&
+      !data.managerEmployeeId
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["managerEmployeeId"],
+        message: "กรุณาเลือกหัวหน้างานสำหรับการกำหนดแบบรายบุคคล",
+      });
+    }
 
-export const employeeImportRowSchema = employeeCreateSchema.passthrough();
+    if (
+      data.managerAssignmentType !== MANAGER_ASSIGNMENT_TYPE.MANUAL &&
+      data.managerEmployeeId
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["managerEmployeeId"],
+        message: "สามารถระบุหัวหน้างานได้เฉพาะเมื่อเลือกกำหนดหัวหน้าเฉพาะบุคคล",
+      });
+    }
+  });
+
+export const employeeImportRowSchema = employeeCreateSchema;
 
 export const employeeIdSchema = z
   .string()

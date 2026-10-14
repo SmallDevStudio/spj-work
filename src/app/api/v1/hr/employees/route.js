@@ -5,8 +5,8 @@ import {
   readJsonRequest,
 } from "@/lib/api/api-response";
 import {
-  requireAllPermissions,
   requireAnyPermission,
+  requireAllPermissions,
 } from "@/lib/auth/authorization";
 import { validateStateChangingRequest } from "@/lib/auth/request-security";
 import { addEmployee, getEmployeeList } from "@/services/hr/employee.service";
@@ -51,21 +51,19 @@ export async function POST(request) {
 
     const currentSession = await requireAllPermissions([
       PERMISSIONS.EMPLOYEE_CREATE,
-      PERMISSIONS.EMPLOYEE_PIN_CREATE,
-      PERMISSIONS.ONBOARDING_CREATE,
+      PERMISSIONS.PRINTER_CODE_CREATE,
     ]);
 
     const requestBody = await readJsonRequest(request);
 
-    const result = await addEmployee({
+    const employee = await addEmployee({
       currentSession,
       input: requestBody,
     });
 
     return createSuccessResponse(
       {
-        employee: result.employee,
-        onboardingRequest: result.onboardingRequest,
+        employee,
       },
       {
         status: 201,
