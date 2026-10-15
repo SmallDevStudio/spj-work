@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   HiArrowRight,
   HiOutlineBuildingOffice2,
@@ -18,7 +18,7 @@ const moduleCards = [
     description:
       "จัดการข้อมูลพนักงาน ตำแหน่ง แผนก หัวหน้างาน และขั้นตอนเตรียมบัญชีกับอุปกรณ์โดยฝ่าย IT",
     icon: HiOutlineUserGroup,
-    href: "/app/hr/employees",
+    href: "/manage/hr/employees",
     enabled: true,
     status: "พร้อมใช้งาน",
   },
@@ -27,7 +27,7 @@ const moduleCards = [
     description:
       "จัดการข้อมูลแผนกสำหรับพนักงาน สายบังคับบัญชา และ Approval Workflow",
     icon: HiOutlineBuildingOffice2,
-    href: "/app/hr/organization",
+    href: "/manage/hr/departments",
     enabled: true,
     status: "พร้อมใช้งาน",
   },
@@ -35,7 +35,7 @@ const moduleCards = [
     name: "ระบบลา",
     description: "จัดการคำขอ สิทธิ์วันลา และการอนุมัติแบบหลายขั้นตอน",
     icon: HiOutlineClipboardDocumentCheck,
-    href: "/app/hr/leave",
+    href: "/manage/hr/leave",
     enabled: false,
     status: "กำลังเตรียม",
   },
@@ -43,7 +43,7 @@ const moduleCards = [
     name: "ปฏิทิน",
     description: "แสดงวันลา วันหยุดบริษัท และวันหยุดประเทศไทย",
     icon: HiOutlineCalendarDays,
-    href: "/app/hr/calendar",
+    href: "/manage/hr/calendar",
     enabled: false,
     status: "กำลังเตรียม",
   },
@@ -51,7 +51,7 @@ const moduleCards = [
     name: "ประกาศ",
     description: "จัดการข่าวสารภายใน พร้อม Email และ LINE notification",
     icon: HiOutlineMegaphone,
-    href: "/app/hr/announcements",
+    href: "/manage/hr/announcements",
     enabled: false,
     status: "กำลังเตรียม",
   },

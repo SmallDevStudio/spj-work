@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   HiArrowLeft,
   HiOutlineBuildingOffice2,
@@ -87,7 +87,7 @@ export default function SettingsPage() {
     <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
       <div>
         <Link
-          href="/app"
+          href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
         >
           <HiArrowLeft className="size-4" aria-hidden="true" />

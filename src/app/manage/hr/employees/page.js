@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 
 import EmployeeDirectoryClient from "@/components/hr/EmployeeDirectoryClient";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -80,7 +80,7 @@ export default async function EmployeesPage() {
   ]).catch(() => null);
 
   if (!currentSession) {
-    redirect("/app");
+    redirect("/");
   }
 
   const [employees, departments] = await Promise.all([

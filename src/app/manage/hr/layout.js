@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 
 import AppShell from "@/components/layout/AppShell";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -11,7 +11,7 @@ export default async function HrLayout({ children }) {
   ).catch(() => null);
 
   if (!currentSession) {
-    redirect("/app");
+    redirect("/");
   }
 
   const { identity, access } = currentSession;

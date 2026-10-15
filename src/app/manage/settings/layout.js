@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 
 import PortalShell from "@/components/layout/PortalShell";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -11,7 +11,7 @@ export default async function SettingsLayout({ children }) {
   ).catch(() => null);
 
   if (!currentSession) {
-    redirect("/app");
+    redirect("/");
   }
 
   const { identity, access } = currentSession;

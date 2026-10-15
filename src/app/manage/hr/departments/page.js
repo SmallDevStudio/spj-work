@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 
 import OrganizationStructureClient from "@/components/hr/OrganizationStructureClient";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -37,7 +37,7 @@ export default async function OrganizationStructurePage() {
   ).catch(() => null);
 
   if (!currentSession) {
-    redirect("/app");
+    redirect("/");
   }
 
   const [departments, employees] = await Promise.all([
