@@ -82,7 +82,7 @@ export default function LoginForm() {
   const isLoading = googleLoading || emergencyLoading;
 
   function redirectAfterLogin() {
-    router.replace("/dashboard");
+    router.replace("/");
     router.refresh();
   }
 
