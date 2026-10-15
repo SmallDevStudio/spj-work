@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname } from "next/navigation";
 import { HiBars3 } from "react-icons/hi2";
@@ -33,47 +33,47 @@ const pageTitles = [
     title: "บริการของฉัน",
   },
   {
-    path: "/app/hr/employees",
+    path: "/manage/hr/employees",
     eyebrow: "HR Management",
     title: "ข้อมูลพนักงาน",
   },
   {
-    path: "/app/hr/organization",
+    path: "/manage/hr/departments",
     eyebrow: "HR Management",
-    title: "แผนกและตำแหน่ง",
+    title: "ข้อมูลแผนก",
   },
   {
-    path: "/app/hr/leave",
+    path: "/manage/hr/leave",
     eyebrow: "HR Management",
     title: "จัดการการลา",
   },
   {
-    path: "/app/hr/calendar",
+    path: "/manage/hr/calendar",
     eyebrow: "HR Management",
     title: "ปฏิทินบริษัท",
   },
   {
-    path: "/app/hr/announcements",
+    path: "/manage/hr/announcements",
     eyebrow: "HR Management",
     title: "ประกาศ",
   },
   {
-    path: "/app/hr/reports",
+    path: "/manage/hr/reports",
     eyebrow: "HR Reports",
     title: "รายงาน",
   },
   {
-    path: "/app/hr/settings",
+    path: "/manage/hr/settings",
     eyebrow: "HR Settings",
     title: "ตั้งค่า HR",
   },
   {
-    path: "/app/hr/audit-logs",
+    path: "/manage/hr/audit-logs",
     eyebrow: "Security & Compliance",
     title: "Audit Log",
   },
   {
-    path: "/app/hr",
+    path: "/manage/hr",
     eyebrow: "HR Management",
     title: "ภาพรวม HR",
   },
@@ -101,7 +101,7 @@ function getPageTitle(pathname, workspace) {
       (page) =>
         pathname === page.path ||
         (page.path !== "/app/me" &&
-          page.path !== "/app/hr" &&
+          page.path !== "/manage/hr" &&
           pathname.startsWith(`${page.path}/`)),
     ) ??
     workspaceDefaults[workspace] ?? {

@@ -1,4 +1,5 @@
 import { PERMISSIONS } from "@/constants/permissions";
+import { ROUTES } from "@/constants/routes";
 
 export const SERVICE_STATUS = Object.freeze({
   ACTIVE: "ACTIVE",
@@ -9,11 +10,10 @@ export const SERVICE_STATUS = Object.freeze({
 export const SERVICES = Object.freeze([
   {
     id: "my-services",
-    name: "บริการของฉัน",
-    shortName: "My Services",
-    description:
-      "ตรวจสอบข้อมูลส่วนตัว สิทธิ์วันลา ยื่นคำขอลา ปฏิทิน และประกาศภายในบริษัท",
-    href: "/app/me",
+    name: "My Portal",
+    shortName: "My Portal",
+    description: "ข้อมูลของฉัน วันลา งานที่ต้องดำเนินการ และบริการส่วนตัว",
+    href: ROUTES.HOME,
     icon: "user",
     permission: PERMISSIONS.SERVICE_MY_ACCESS,
     status: SERVICE_STATUS.ACTIVE,
@@ -24,9 +24,8 @@ export const SERVICES = Object.freeze([
     id: "hr",
     name: "บริหารทรัพยากรบุคคล",
     shortName: "HR Management",
-    description:
-      "จัดการข้อมูลพนักงาน โครงสร้างองค์กร การลา ปฏิทิน ประกาศ และรายงาน",
-    href: "/app/hr",
+    description: "จัดการข้อมูลพนักงาน แผนก การลา และงาน HR",
+    href: ROUTES.MANAGE_HR,
     icon: "users",
     permission: PERMISSIONS.SERVICE_HR_ACCESS,
     status: SERVICE_STATUS.ACTIVE,
@@ -37,9 +36,8 @@ export const SERVICES = Object.freeze([
     id: "projects",
     name: "บริหารโครงการ",
     shortName: "Projects Management",
-    description:
-      "วางแผนและติดตามการผลิตรายการโทรทัศน์ งานถ่ายทำ และงาน Content",
-    href: "/app/projects",
+    description: "วางแผนและติดตามงานผลิตรายการและคอนเทนต์",
+    href: "/projects",
     icon: "projects",
     permission: PERMISSIONS.SERVICE_PROJECTS_ACCESS,
     status: SERVICE_STATUS.COMING_SOON,
@@ -50,9 +48,8 @@ export const SERVICES = Object.freeze([
     id: "settings",
     name: "ตั้งค่าองค์กร",
     shortName: "Organization Settings",
-    description:
-      "จัดการผู้ใช้งาน สิทธิ์ ระบบ HR การเชื่อมต่อ และการตั้งค่าของบริษัท",
-    href: "/app/settings",
+    description: "จัดการสิทธิ์และการตั้งค่าของบริษัท",
+    href: ROUTES.MANAGE_SETTINGS,
     icon: "settings",
     permission: PERMISSIONS.ORGANIZATION_MANAGE,
     status: SERVICE_STATUS.ACTIVE,
@@ -68,9 +65,9 @@ export function getAvailableServices(permissions = []) {
 
   return SERVICES.filter((service) =>
     permissions.includes(service.permission),
-  ).sort((firstService, secondService) => {
-    return firstService.order - secondService.order;
-  });
+  ).sort(
+    (firstService, secondService) => firstService.order - secondService.order,
+  );
 }
 
 export function isServiceActive(service) {

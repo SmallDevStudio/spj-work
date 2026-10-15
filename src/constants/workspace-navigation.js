@@ -1,4 +1,4 @@
-import {
+﻿import {
   HiOutlineBuildingOffice2,
   HiOutlineCalendarDays,
   HiOutlineChartBarSquare,
@@ -62,48 +62,48 @@ export const WORKSPACE_SETTINGS = Object.freeze({
   hr: {
     name: "บริหารทรัพยากรบุคคล",
     shortName: "HR Management",
-    homeHref: "/app/hr",
+    homeHref: "/manage/hr",
     activeClassName: "bg-amber-400 text-slate-950 shadow-sm",
     brandClassName: "bg-amber-400 text-slate-950",
     navigation: [
       {
         name: "ภาพรวม HR",
-        href: "/app/hr",
+        href: "/manage/hr",
         icon: HiOutlineHome,
         permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
         enabled: true,
       },
       {
         name: "ข้อมูลพนักงาน",
-        href: "/app/hr/employees",
+        href: "/manage/hr/employees",
         icon: HiOutlineUserGroup,
         permissions: [PERMISSIONS.EMPLOYEE_READ_ALL, PERMISSIONS.EMPLOYEE_READ],
         enabled: true,
       },
       {
         name: "แผนก",
-        href: "/app/hr/organization",
+        href: "/manage/hr/departments",
         icon: HiOutlineBuildingOffice2,
         permissions: [PERMISSIONS.DEPARTMENT_READ],
         enabled: true,
       },
       {
         name: "จัดการการลา",
-        href: "/app/hr/leave",
+        href: "/manage/hr/leave",
         icon: HiOutlineClipboardDocumentCheck,
         permissions: [PERMISSIONS.LEAVE_READ_ALL, PERMISSIONS.LEAVE_MANAGE],
         enabled: false,
       },
       {
         name: "ปฏิทินบริษัท",
-        href: "/app/hr/calendar",
+        href: "/manage/hr/calendar",
         icon: HiOutlineCalendarDays,
         permissions: [PERMISSIONS.CALENDAR_READ_ALL],
         enabled: false,
       },
       {
         name: "ประกาศ",
-        href: "/app/hr/announcements",
+        href: "/manage/hr/announcements",
         icon: HiOutlineMegaphone,
         permissions: [
           PERMISSIONS.ANNOUNCEMENT_CREATE,
@@ -113,21 +113,21 @@ export const WORKSPACE_SETTINGS = Object.freeze({
       },
       {
         name: "รายงาน",
-        href: "/app/hr/reports",
+        href: "/manage/hr/reports",
         icon: HiOutlineChartBarSquare,
         permissions: [PERMISSIONS.LEAVE_REPORT_READ],
         enabled: false,
       },
       {
         name: "ตั้งค่า HR",
-        href: "/app/hr/settings",
+        href: "/manage/hr/settings",
         icon: HiOutlineCog6Tooth,
         permissions: [PERMISSIONS.HR_SETTINGS_READ],
         enabled: false,
       },
       {
         name: "Audit Log",
-        href: "/app/hr/audit-logs",
+        href: "/manage/hr/audit-logs",
         icon: HiOutlineShieldCheck,
         permissions: [PERMISSIONS.AUDIT_READ],
         enabled: false,
