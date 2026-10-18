@@ -1,57 +1,208 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { HiOutlineSquares2X2 } from "react-icons/hi2";
+import { usePathname } from "next/navigation";
+import {
+  HiOutlineBell,
+  HiOutlineCalendarDays,
+  HiOutlineChevronDown,
+  HiOutlineEnvelope,
+  HiOutlineHome,
+  HiOutlineMagnifyingGlass,
+  HiOutlineSquares2X2,
+  HiOutlineUser,
+  HiOutlineUserGroup,
+} from "react-icons/hi2";
 
-import ThemeToggle from "@/components/layout/ThemeToggle";
 import UserMenu from "@/components/layout/UserMenu";
-import { ROLE_LABELS } from "@/constants/roles";
+import { PERMISSIONS } from "@/constants/permissions";
+import { ROUTES } from "@/constants/routes";
+
+const mobileItems = [
+  { label: "หน้าแรก", icon: HiOutlineHome, href: ROUTES.HOME },
+  { label: "การลา", icon: HiOutlineCalendarDays, href: null },
+  {
+    label: "Services",
+    icon: HiOutlineSquares2X2,
+    href: "/#portal-services-title",
+  },
+  { label: "Inbox", icon: HiOutlineEnvelope, href: null },
+  { label: "โปรไฟล์", icon: HiOutlineUser, href: null },
+];
 
 export default function PortalShell({ children, session }) {
-  const roleLabel = ROLE_LABELS[session.role]?.th ?? session.role;
-  const organizationName =
-    session.organization?.name ??
-    session.organization?.displayName ??
-    "Superjeew Co., Ltd.";
+  const pathname = usePathname();
+  const [managementOpen, setManagementOpen] = useState(false);
+
+  const permissions = session.permissions ?? [];
+  const canAccessHr = permissions.includes(PERMISSIONS.SERVICE_HR_ACCESS);
+  const canAccessSettings = permissions.includes(
+    PERMISSIONS.ORGANIZATION_MANAGE,
+  );
+  const canAccessManagement = canAccessHr || canAccessSettings;
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="mx-auto flex min-h-20 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/app" className="flex min-w-0 items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-sm">
-              <HiOutlineSquares2X2 className="size-6" aria-hidden="true" />
-            </div>
-
-            <div className="min-w-0">
-              <p className="truncate text-base font-black tracking-tight text-slate-950 dark:text-white">
-                SPJ Work
-              </p>
-
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {organizationName}
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#f7f9fb] text-slate-950 dark:bg-slate-950 dark:text-white">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 max-lg:bg-slate-950 max-lg:text-white">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1536px] items-center gap-6 px-5 sm:px-7 xl:px-12">
+          <Link
+            href={ROUTES.HOME}
+            aria-label="SPJ Work หน้าแรก"
+            className="flex shrink-0 items-center whitespace-nowrap text-[1.55rem] font-black tracking-[-0.06em] sm:text-[1.9rem]"
+          >
+            <span>SPJ</span>
+            <span className="ml-1 text-amber-400">Work</span>
           </Link>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden text-right md:block">
-              <p className="max-w-52 truncate text-sm font-semibold text-slate-950 dark:text-white">
-                {session.user?.name ?? session.user?.email}
-              </p>
+          <nav
+            aria-label="เมนูหลัก"
+            className="hidden h-full items-center gap-2 md:flex"
+          >
+            <Link
+              href={ROUTES.HOME}
+              aria-current={pathname === ROUTES.HOME ? "page" : undefined}
+              className={`relative flex h-full items-center gap-2 px-4 text-sm font-semibold transition ${
+                pathname === ROUTES.HOME
+                  ? "text-slate-950 after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:rounded-t-full after:bg-amber-400 dark:text-white max-lg:text-white"
+                  : "text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white max-lg:text-slate-200"
+              }`}
+            >
+              <HiOutlineHome className="size-5" aria-hidden="true" />
+              My Portal
+            </Link>
 
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {roleLabel}
-              </p>
+            {canAccessManagement ? (
+              <div className="relative flex h-full items-center">
+                <button
+                  type="button"
+                  aria-expanded={managementOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setManagementOpen((open) => !open)}
+                  className="flex h-full items-center gap-2 px-4 text-sm font-semibold text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white max-lg:text-slate-200"
+                >
+                  <HiOutlineUserGroup className="size-5" aria-hidden="true" />
+                  Management
+                  <HiOutlineChevronDown
+                    className={`size-4 transition-transform ${
+                      managementOpen ? "rotate-180" : ""
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {managementOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="ปิดเมนู Management"
+                      onClick={() => setManagementOpen(false)}
+                      className="fixed inset-0 z-30 cursor-default"
+                    />
+                    <div
+                      role="menu"
+                      className="absolute top-[calc(100%-2px)] left-0 z-40 w-56 rounded-2xl border border-slate-200 bg-white p-2 text-slate-900 shadow-xl dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    >
+                      {canAccessHr ? (
+                        <Link
+                          role="menuitem"
+                          href="/manage"
+                          onClick={() => setManagementOpen(false)}
+                          className="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          HR Management
+                        </Link>
+                      ) : null}
+
+                      {canAccessSettings ? (
+                        <Link
+                          role="menuitem"
+                          href="/settings"
+                          onClick={() => setManagementOpen(false)}
+                          className="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          ตั้งค่าองค์กร
+                        </Link>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <div className="hidden h-10 w-64 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400 xl:flex dark:border-slate-700 dark:bg-slate-800">
+              <HiOutlineMagnifyingGlass
+                className="size-5 shrink-0"
+                aria-hidden="true"
+              />
+              <span className="truncate text-xs">
+                ค้นหาข้อมูล ข่าวสาร หรือบริการ...
+              </span>
+              <span className="sr-only">ระบบค้นหากำลังเตรียม</span>
             </div>
 
-            <ThemeToggle />
+            {canAccessManagement ? (
+              <Link
+                href={canAccessHr ? ROUTES.MANAGE_HR : ROUTES.MANAGE_SETTINGS}
+                aria-label="เข้าสู่ Management"
+                className="flex size-10 items-center justify-center rounded-xl text-white md:hidden"
+              >
+                <HiOutlineUserGroup className="size-6" aria-hidden="true" />
+              </Link>
+            ) : null}
+
+            <span
+              title="การแจ้งเตือนกำลังเตรียม"
+              className="flex size-10 items-center justify-center text-slate-700 dark:text-slate-200 max-lg:text-white"
+            >
+              <HiOutlineBell className="size-6" aria-hidden="true" />
+              <span className="sr-only">การแจ้งเตือนกำลังเตรียม</span>
+            </span>
+
+            <div className="hidden h-7 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
+
             <UserMenu session={session} />
           </div>
         </div>
       </header>
 
-      {children}
+      <div className="pb-20 md:pb-0">{children}</div>
+
+      <nav
+        aria-label="เมนูมือถือ"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden dark:border-slate-800 dark:bg-slate-900/95"
+      >
+        {mobileItems.map((item) => {
+          const Icon = item.icon;
+          const active = item.href === ROUTES.HOME && pathname === ROUTES.HOME;
+          const itemClass = `flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium ${
+            active
+              ? "text-amber-600 dark:text-amber-400"
+              : item.href
+                ? "text-slate-600 dark:text-slate-300"
+                : "text-slate-400 dark:text-slate-600"
+          }`;
+
+          return item.href ? (
+            <Link
+              key={item.label}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={itemClass}
+            >
+              <Icon className="size-6" aria-hidden="true" />
+              <span>{item.label}</span>
+            </Link>
+          ) : (
+            <div key={item.label} className={itemClass}>
+              <Icon className="size-6" aria-hidden="true" />
+              <span>{item.label}</span>
+            </div>
+          );
+        })}
+      </nav>
     </div>
   );
 }

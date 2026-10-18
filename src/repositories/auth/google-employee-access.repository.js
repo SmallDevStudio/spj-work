@@ -13,6 +13,7 @@ import { adminFirestore } from "@/lib/firebase/admin";
 
 const ACTIVE_STATUS = "ACTIVE";
 const GOOGLE_PROVIDER_ID = "google.com";
+import { ROLES } from "@/constants/roles";
 
 function normalizeEmail(email) {
   return email?.trim().toLowerCase() ?? "";
@@ -163,26 +164,48 @@ export async function ensureGoogleEmployeeAccess(identity) {
       .collection("memberships")
       .doc(identity.uid);
 
-    const [employeeSnapshot, userSnapshot, membershipSnapshot] =
+    const [companySnapshot, userSnapshot, membershipSnapshot] =
       await Promise.all([
-        transaction.get(employeeRef),
+        transaction.get(companyRef),
         transaction.get(userRef),
         transaction.get(membershipRef),
       ]);
 
+    if (
+      !companySnapshot.exists ||
+      companySnapshot.data()?.isDeleted === true ||
+      companySnapshot.data()?.status !== ACTIVE_STATUS
+    ) {
+      throw createDeniedError({
+        code: "AUTH_EMPLOYEE_COMPANY_INACTIVE",
+        message: "บริษัทของพนักงานไม่ได้เปิดใช้งาน กรุณาติดต่อฝ่าย HR",
+      });
+    }
+
     const employee = employeeSnapshot.exists ? employeeSnapshot.data() : null;
-
-    const platformUser = userSnapshot.exists ? userSnapshot.data() : null;
-
-    const membership = membershipSnapshot.exists
-      ? membershipSnapshot.data()
-      : null;
 
     validateEmployee({
       employee,
       email,
       uid: identity.uid,
     });
+
+    if (!employee.companyId) {
+      throw createDeniedError({
+        code: "AUTH_EMPLOYEE_COMPANY_REQUIRED",
+        message: "ยังไม่ได้กำหนดบริษัทให้พนักงาน กรุณาติดต่อฝ่าย HR",
+      });
+    }
+
+    const companyRef = organizationRef
+      .collection("companies")
+      .doc(employee.companyId);
+
+    const platformUser = userSnapshot.exists ? userSnapshot.data() : null;
+
+    const membership = membershipSnapshot.exists
+      ? membershipSnapshot.data()
+      : null;
 
     validateExistingUser({
       platformUser,
@@ -194,6 +217,25 @@ export async function ensureGoogleEmployeeAccess(identity) {
       membership,
       employeeId,
     });
+
+    const companyAccess = membership?.companyAccess ?? {
+      scope: "SELECTED",
+      companyIds: [employee.companyId],
+    };
+
+    const canAccessHomeCompany =
+      companyAccess.scope === "ALL" ||
+      (companyAccess.scope === "SELECTED" &&
+        Array.isArray(companyAccess.companyIds) &&
+        companyAccess.companyIds.includes(employee.companyId));
+
+    if (!canAccessHomeCompany) {
+      throw createDeniedError({
+        code: "AUTH_EMPLOYEE_COMPANY_ACCESS_DENIED",
+        message:
+          "บัญชีนี้ไม่มีสิทธิ์เข้าถึงบริษัทที่พนักงานสังกัด กรุณาติดต่อผู้ดูแลระบบ",
+      });
+    }
 
     const existingProviders = Array.isArray(platformUser?.authProviders)
       ? platformUser.authProviders
@@ -237,6 +279,12 @@ export async function ensureGoogleEmployeeAccess(identity) {
         organizationId,
         userId: identity.uid,
         employeeId,
+        companyAccess:
+          membership?.companyAccess ??
+          (membership?.role === ROLES.SUPERADMIN
+            ? { scope: "ALL", companyIds: [] }
+            : { scope: "SELECTED", companyIds: [employee.companyId] }),
+        companyAccess,
         role: membership?.role ?? employee.role,
         status: membership?.status ?? ACTIVE_STATUS,
         groupIds: membership?.groupIds ?? [],
@@ -303,6 +351,8 @@ export async function ensureGoogleEmployeeAccess(identity) {
           userId: identity.uid,
           providerId: GOOGLE_PROVIDER_ID,
           linked: true,
+          companyId: employee.companyId,
+          companyAccess,
         },
         metadata: null,
         createdAt: FieldValue.serverTimestamp(),

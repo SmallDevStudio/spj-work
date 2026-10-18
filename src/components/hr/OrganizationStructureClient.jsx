@@ -18,7 +18,7 @@ import {
   createDepartmentRequest,
   getApiErrorMessage,
   updateDepartmentRequest,
-} from "@/services/hr/organization-structure.api";
+} from "@/services/department/organization-structure.api";
 
 const initialDepartmentForm = {
   nameTh: "",

@@ -7,6 +7,7 @@ import {
   getOrganizationAccess,
   getPlatformUser,
 } from "@/repositories/auth/access.repository";
+import { resolveCompanyAccess } from "@/lib/auth/company-access";
 
 const ACTIVE_STATUS = "ACTIVE";
 const PASSWORD_PROVIDER_ID = "password";
@@ -158,6 +159,11 @@ export async function resolveUserAccess(identity) {
     membership,
   });
 
+  const companyAccess = resolveCompanyAccess({
+    role: membership.role,
+    companyAccess: membership.companyAccess,
+  });
+
   const effectivePermissions = calculateEffectivePermissions({
     role: membership.role,
     membership,
@@ -178,6 +184,7 @@ export async function resolveUserAccess(identity) {
       role: membership.role,
       status: membership.status,
       groupIds: membership.groupIds ?? [],
+      companyAccess,
     },
     permissions: effectivePermissions,
   };

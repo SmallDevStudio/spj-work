@@ -77,3 +77,25 @@ export async function requireAllPermissions(requiredPermissions) {
 
   return currentSession;
 }
+
+export async function requireOwnEmployeePermission({ userId, permission }) {
+  const currentSession = await requirePermission(permission);
+
+  if (currentSession.identity.uid !== userId) {
+    throw new AuthSessionError({
+      code: "AUTH_USER_SCOPE_DENIED",
+      message: "You cannot access another user's service.",
+      status: 403,
+    });
+  }
+
+  if (!currentSession.access.membership.employeeId) {
+    throw new AuthSessionError({
+      code: "AUTH_EMPLOYEE_NOT_LINKED",
+      message: "This account is not linked to an employee.",
+      status: 403,
+    });
+  }
+
+  return currentSession;
+}

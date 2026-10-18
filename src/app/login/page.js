@@ -11,7 +11,7 @@ export default async function LoginPage() {
   const currentSession = await getCurrentApplicationSession().catch(() => null);
 
   if (currentSession) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return (

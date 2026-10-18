@@ -5,7 +5,7 @@ import { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 
-export default function AppShell({ children, session, workspace = "me" }) {
+export default function AppShell({ children, session, workspace = "hr" }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 const DEVELOPMENT_SESSION_COOKIE = "spj_session";
-
 const PRODUCTION_SESSION_COOKIE = "__Host-spj_session";
 
 function getSessionCookieName() {
@@ -25,5 +24,5 @@ export function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/manage/:path*", "/settings/:path*"],
 };
