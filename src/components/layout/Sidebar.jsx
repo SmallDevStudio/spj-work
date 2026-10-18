@@ -44,12 +44,12 @@ export default function Sidebar({
   isOpen,
   onClose,
   session,
-  workspace = "me",
+  workspace = "hr",
 }) {
   const pathname = usePathname();
 
   const currentWorkspace =
-    WORKSPACE_SETTINGS[workspace] ?? WORKSPACE_SETTINGS.me;
+    WORKSPACE_SETTINGS[workspace] ?? WORKSPACE_SETTINGS.hr;
 
   const availableNavigation = currentWorkspace.navigation.filter((item) =>
     hasAnyPermission(session.permissions, item.permissions),

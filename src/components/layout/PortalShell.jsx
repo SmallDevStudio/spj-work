@@ -106,7 +106,7 @@ export default function PortalShell({ children, session }) {
                       {canAccessHr ? (
                         <Link
                           role="menuitem"
-                          href="/manage/hr"
+                          href="/manage"
                           onClick={() => setManagementOpen(false)}
                           className="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
@@ -117,7 +117,7 @@ export default function PortalShell({ children, session }) {
                       {canAccessSettings ? (
                         <Link
                           role="menuitem"
-                          href="/manage/settings"
+                          href="/settings"
                           onClick={() => setManagementOpen(false)}
                           className="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
@@ -142,6 +142,16 @@ export default function PortalShell({ children, session }) {
               </span>
               <span className="sr-only">ระบบค้นหากำลังเตรียม</span>
             </div>
+
+            {canAccessManagement ? (
+              <Link
+                href={canAccessHr ? ROUTES.MANAGE_HR : ROUTES.MANAGE_SETTINGS}
+                aria-label="เข้าสู่ Management"
+                className="flex size-10 items-center justify-center rounded-xl text-white md:hidden"
+              >
+                <HiOutlineUserGroup className="size-6" aria-hidden="true" />
+              </Link>
+            ) : null}
 
             <span
               title="การแจ้งเตือนกำลังเตรียม"

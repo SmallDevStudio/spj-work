@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { usePathname } from "next/navigation";
 import { HiBars3 } from "react-icons/hi2";
@@ -8,112 +8,93 @@ import UserMenu from "@/components/layout/UserMenu";
 
 const pageTitles = [
   {
-    path: "/app/me/profile",
-    eyebrow: "My Services",
-    title: "ข้อมูลของฉัน",
+    path: "/manage/company/work-schedules",
+    eyebrow: "Company Management",
+    title: "วันทำงานบริษัท",
   },
   {
-    path: "/app/me/leave",
-    eyebrow: "My Services",
-    title: "การลาของฉัน",
+    path: "/manage/company/employee-migration",
+    eyebrow: "Company Management",
+    title: "ย้ายข้อมูลบริษัทพนักงาน",
   },
   {
-    path: "/app/me/calendar",
-    eyebrow: "My Services",
-    title: "ปฏิทินของฉัน",
+    path: "/manage/company/readiness",
+    eyebrow: "Company Management",
+    title: "ตรวจความพร้อมข้อมูลบริษัท",
   },
   {
-    path: "/app/me/announcements",
-    eyebrow: "My Services",
-    title: "ประกาศ",
+    path: "/manage/users/company-access",
+    eyebrow: "User Management",
+    title: "สิทธิ์เข้าถึงบริษัท",
   },
   {
-    path: "/app/me",
-    eyebrow: "Employee Self-Service",
-    title: "บริการของฉัน",
+    path: "/manage/leave/assignments",
+    eyebrow: "Leave Management",
+    title: "กำหนด Leave Template",
   },
   {
-    path: "/manage/hr/employees",
+    path: "/manage/leave/holidays",
+    eyebrow: "Leave Management",
+    title: "วันหยุด",
+  },
+  {
+    path: "/manage/leave/settings",
+    eyebrow: "Leave Management",
+    title: "ตั้งค่าประเภทการลา",
+  },
+  {
+    path: "/manage/leave/templates",
+    eyebrow: "Leave Management",
+    title: "Leave Templates",
+  },
+  {
+    path: "/manage/employee",
     eyebrow: "HR Management",
     title: "ข้อมูลพนักงาน",
   },
   {
-    path: "/manage/hr/departments",
+    path: "/manage/department",
     eyebrow: "HR Management",
     title: "ข้อมูลแผนก",
   },
   {
-    path: "/manage/hr/leave",
-    eyebrow: "HR Management",
+    path: "/manage/company",
+    eyebrow: "Company Management",
+    title: "ข้อมูลบริษัท",
+  },
+  {
+    path: "/manage/users",
+    eyebrow: "User Management",
+    title: "จัดการผู้ใช้",
+  },
+  {
+    path: "/manage/leave",
+    eyebrow: "Leave Management",
     title: "จัดการการลา",
   },
   {
-    path: "/manage/hr/calendar",
-    eyebrow: "HR Management",
-    title: "ปฏิทินบริษัท",
-  },
-  {
-    path: "/manage/hr/announcements",
-    eyebrow: "HR Management",
-    title: "ประกาศ",
-  },
-  {
-    path: "/manage/hr/reports",
-    eyebrow: "HR Reports",
-    title: "รายงาน",
-  },
-  {
-    path: "/manage/hr/settings",
-    eyebrow: "HR Settings",
-    title: "ตั้งค่า HR",
-  },
-  {
-    path: "/manage/hr/audit-logs",
-    eyebrow: "Security & Compliance",
-    title: "Audit Log",
-  },
-  {
-    path: "/manage/hr",
-    eyebrow: "HR Management",
-    title: "ภาพรวม HR",
-  },
-  {
-    path: "/dashboard",
+    path: "/manage",
     eyebrow: "SPJ Work",
-    title: "กำลังเปลี่ยนเส้นทาง",
+    title: "หน้าจัดการ",
   },
 ];
 
-const workspaceDefaults = {
-  me: {
-    eyebrow: "Employee Self-Service",
-    title: "บริการของฉัน",
-  },
-  hr: {
-    eyebrow: "HR Management",
-    title: "บริหารทรัพยากรบุคคล",
-  },
-};
-
-function getPageTitle(pathname, workspace) {
+function getPageTitle(pathname) {
   return (
     pageTitles.find(
       (page) =>
         pathname === page.path ||
-        (page.path !== "/app/me" &&
-          page.path !== "/manage/hr" &&
-          pathname.startsWith(`${page.path}/`)),
-    ) ??
-    workspaceDefaults[workspace] ?? {
+        (page.path !== "/manage" && pathname.startsWith(`${page.path}/`)),
+    ) ?? {
       eyebrow: "SPJ Work",
-      title: "ระบบบริหารงานภายใน",
+      title: "หน้าจัดการ",
     }
   );
 }
 
-export default function Header({ onOpenSidebar, session, workspace = "me" }) {
+export default function Header({ onOpenSidebar, session }) {
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname, workspace);
+  const pageTitle = getPageTitle(pathname);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">

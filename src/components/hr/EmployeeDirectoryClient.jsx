@@ -32,12 +32,14 @@ import {
   createEmployeeRequest,
   getEmployeeApiErrorMessage,
   updateEmployeeRequest,
-} from "@/services/hr/employee.api";
+} from "@/services/employee/employee.api";
 
 import {
   createDepartmentRequest,
   getApiErrorMessage as getDepartmentApiErrorMessage,
-} from "@/services/hr/organization-structure.api";
+} from "@/services/department/organization-structure.api";
+
+import EmployeeTable from "@/components/hr/EmployeeTable";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -54,6 +56,7 @@ function createInitialForm() {
     birthDate: "",
     phoneNumber: "",
     positionTitle: "",
+    companyId: "",
     departmentId: "",
     managerAssignmentType: DEFAULT_EMPLOYEE_VALUES.managerAssignmentType,
     managerEmployeeId: "",
@@ -79,6 +82,7 @@ function createEditForm(employee) {
     birthDate: employee.birthDate ?? "",
     phoneNumber: employee.phoneNumber ?? "",
     positionTitle: employee.positionTitle ?? "",
+    companyId: employee.companyId ?? "",
     departmentId: employee.departmentId ?? "",
 
     managerAssignmentType:
@@ -241,6 +245,8 @@ function AccessStatusBadge({ status }) {
 export default function EmployeeDirectoryClient({
   employees,
   departments: initialDepartments,
+  companies,
+  showCompany,
   canCreate,
   canEdit,
   canManageDepartments,
@@ -261,6 +267,7 @@ export default function EmployeeDirectoryClient({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("ALL");
 
   const departmentMap = useMemo(
     () =>
@@ -288,6 +295,13 @@ export default function EmployeeDirectoryClient({
     const normalizedSearch = search.trim().toLocaleLowerCase("th");
 
     return employees.filter((employee) => {
+      if (
+        showCompany &&
+        companyFilter !== "ALL" &&
+        employee.companyId !== companyFilter
+      ) {
+        return false;
+      }
       if (
         departmentFilter !== "ALL" &&
         employee.departmentId !== departmentFilter
@@ -320,7 +334,14 @@ export default function EmployeeDirectoryClient({
           .includes(normalizedSearch),
       );
     });
-  }, [departmentFilter, employees, search, statusFilter]);
+  }, [
+    companyFilter,
+    departmentFilter,
+    employees,
+    search,
+    statusFilter,
+    showCompany,
+  ]);
 
   function openDialog() {
     setEditingEmployeeId(null);
@@ -589,7 +610,7 @@ export default function EmployeeDirectoryClient({
         </section>
 
         <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(160px,200px))]">
             <label className="relative block">
               <span className="sr-only">ค้นหาพนักงาน</span>
               <HiOutlineMagnifyingGlass
@@ -604,6 +625,22 @@ export default function EmployeeDirectoryClient({
                 className="min-h-12 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-950 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
             </label>
+
+            {showCompany && (
+              <select
+                value={companyFilter}
+                onChange={(event) => setCompanyFilter(event.target.value)}
+                aria-label="กรองตามบริษัท"
+                className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option value="ALL">ทุกบริษัทที่เข้าถึงได้</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.nameTh}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <select
               value={departmentFilter}
@@ -753,6 +790,14 @@ export default function EmployeeDirectoryClient({
               ))}
             </div>
           )}
+          <EmployeeTable
+            employees={filteredEmployees}
+            departments={departments}
+            companies={companies}
+            showCompany={showCompany}
+            canEdit={canEdit}
+            onEdit={openEditDialog}
+          />
         </section>
       </main>
 
@@ -796,6 +841,23 @@ export default function EmployeeDirectoryClient({
               </h3>
 
               <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                <SelectField
+                  label="บริษัท"
+                  name="companyId"
+                  value={form.companyId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">เลือกบริษัท</option>
+                  {companies
+                    .filter((company) => company.status === "ACTIVE")
+                    .map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.nameTh} ({company.code})
+                      </option>
+                    ))}
+                </SelectField>
+
                 <Field
                   label="รหัสพนักงาน"
                   name="employeeCode"

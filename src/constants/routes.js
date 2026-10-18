@@ -12,12 +12,12 @@ export const ROUTES = Object.freeze({
   SERVICES: "/services",
   INBOX: "/inbox",
 
-  MANAGE_HR: "/manage/hr",
-  MANAGE_HR_EMPLOYEES: "/manage/hr/employees",
-  MANAGE_HR_DEPARTMENTS: "/manage/hr/departments",
-  MANAGE_HR_LEAVE: "/manage/hr/leave",
+  MANAGE_HR: "/manage",
+  MANAGE_HR_EMPLOYEES: "/manage/employee",
+  MANAGE_HR_DEPARTMENTS: "/manage/department",
+  MANAGE_HR_LEAVE: "/manage/leave",
   MANAGE_IT: "/manage/it",
   MANAGE_ASSETS: "/manage/assets",
-  MANAGE_SETTINGS: "/manage/settings",
+  MANAGE_SETTINGS: "/settings",
   MANAGE_AUDIT_LOGS: "/manage/audit-logs",
 });

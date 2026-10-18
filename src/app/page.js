@@ -7,8 +7,8 @@ import { PERMISSIONS } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
 import { getAvailableServices } from "@/constants/services";
 import { requirePermission } from "@/lib/auth/authorization";
-import { getEmployeeById } from "@/repositories/hr/employee.repository";
-import { getDepartmentById } from "@/repositories/hr/organization-structure.repository";
+import { getEmployeeById } from "@/repositories/employee/employee.repository";
+import { getDepartmentById } from "@/repositories/department/organization-structure.repository";
 import StoreProvider from "@/providers/StoreProvider";
 
 export const metadata = {
