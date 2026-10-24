@@ -7,6 +7,10 @@ import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
 import { resolveLeaveApprovalPlan } from "@/modules/leave/leave-approver-plan";
 import { createLeaveSubmissionPolicy } from "@/modules/leave/leave-submission-policy";
+import {
+  calculateLeaveUsage,
+  findOverlappingLeaveRequest,
+} from "@/modules/leave/leave-usage";
 import { prepareLeaveSubmission } from "@/modules/leave/prepare-leave-submission";
 import { getEmployeeById } from "@/repositories/employee/employee.repository";
 import { getEmployeeLeaveBalance } from "@/repositories/leave/leave-balance.repository";
@@ -40,64 +44,6 @@ function toApplicationError(error, fallbackCode) {
     message: error?.message ?? "ยังไม่สามารถส่งใบลาได้",
     status: error?.status ?? 409,
   });
-}
-
-function countCommittedDays({
-  snapshots,
-  draftId,
-  employeeId,
-  companyId,
-  leaveTypeCode,
-  periodStart,
-  periodEnd,
-  openingCutoverDate,
-}) {
-  if (snapshots.size > MAX_REQUESTS) {
-    fail(
-      "LEAVE_BALANCE_HISTORY_LIMIT",
-      "ประวัติใบลามากเกินขนาดที่ตรวจยอดได้ กรุณาติดต่อ HR",
-    );
-  }
-
-  let approvedDays = 0;
-  let pendingDays = 0;
-
-  for (const snapshot of snapshots.docs) {
-    const item = snapshot.data();
-
-    if (
-      snapshot.id === draftId ||
-      item.isDeleted === true ||
-      item.employeeId !== employeeId ||
-      item.companyId !== companyId ||
-      item.leaveTypeCode !== leaveTypeCode ||
-      item.startDate < periodStart ||
-      item.endDate > periodEnd ||
-      (openingCutoverDate && item.startDate < openingCutoverDate) ||
-      !["APPROVED", "PENDING_APPROVAL"].includes(item.status)
-    ) {
-      continue;
-    }
-
-    if (
-      typeof item.requestedDays !== "number" ||
-      !Number.isFinite(item.requestedDays) ||
-      item.requestedDays <= 0
-    ) {
-      fail(
-        "LEAVE_BALANCE_REQUEST_INVALID",
-        `ใบลา ${snapshot.id} ไม่มีจำนวนวันที่ถูกต้อง กรุณาให้ HR ตรวจสอบ`,
-      );
-    }
-
-    if (item.status === "APPROVED") {
-      approvedDays += item.requestedDays;
-    } else {
-      pendingDays += item.requestedDays;
-    }
-  }
-
-  return { approvedDays, pendingDays };
 }
 
 export async function submitOwnLeaveDraft({ currentSession, requestId }) {
@@ -314,19 +260,50 @@ export async function submitOwnLeaveDraft({ currentSession, requestId }) {
       );
     }
 
-    const usage = countCommittedDays({
-      snapshots: requestSnapshots,
-      draftId: requestId,
-      employeeId,
-      companyId: draft.companyId,
-      leaveTypeCode: draft.leaveTypeCode,
-      periodStart: prepared.periodStart,
-      periodEnd: prepared.periodEnd,
-      openingCutoverDate:
-        entitlement.source === "OPENING_BALANCE"
-          ? entitlement.effectiveDate
-          : null,
+    if (requestSnapshots.size > MAX_REQUESTS) {
+      fail(
+        "LEAVE_BALANCE_HISTORY_LIMIT",
+        "ประวัติใบลามากเกินขนาดที่ตรวจยอดได้ กรุณาติดต่อ HR",
+      );
+    }
+
+    const requests = requestSnapshots.docs.map((snapshot) => ({
+      id: snapshot.id,
+      ...snapshot.data(),
+    }));
+
+    const overlapping = findOverlappingLeaveRequest({
+      requests,
+      draft,
+      excludeRequestId: requestId,
     });
+
+    if (overlapping) {
+      fail(
+        "LEAVE_DATES_OVERLAP",
+        "มีใบลารออนุมัติหรืออนุมัติแล้วในช่วงวันที่นี้ กรุณาตรวจสอบรายการลา",
+      );
+    }
+
+    let usage;
+
+    try {
+      usage = calculateLeaveUsage({
+        requests,
+        excludeRequestId: requestId,
+        employeeId,
+        companyId: draft.companyId,
+        leaveTypeCode: draft.leaveTypeCode,
+        periodStart: prepared.periodStart,
+        periodEnd: prepared.periodEnd,
+        openingCutoverDate:
+          entitlement.source === "OPENING_BALANCE"
+            ? entitlement.effectiveDate
+            : null,
+      });
+    } catch (error) {
+      throw toApplicationError(error, "LEAVE_BALANCE_REQUEST_INVALID");
+    }
 
     const remaining =
       balance.availableDays === null

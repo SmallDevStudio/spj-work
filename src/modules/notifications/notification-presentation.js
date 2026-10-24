@@ -2,6 +2,8 @@ const SUPPORTED_TYPES = new Set([
   "LEAVE_REQUEST_SUBMITTED",
   "LEAVE_DECISION_RECORDED",
   "LEAVE_HR_APPROVER_REASSIGNED",
+  "LEAVE_REQUEST_DELETED",
+  "LEAVE_DEV_TEST_EVENT",
 ]);
 
 export function isSupportedNotificationEvent(type) {
@@ -9,11 +11,26 @@ export function isSupportedNotificationEvent(type) {
 }
 
 export function presentNotificationEvent(event, employeeId) {
+  if (event.type === "LEAVE_DEV_TEST_EVENT") {
+    return {
+      title: "ผลทดสอบระบบลา",
+      description: `สถานะทดสอบ: ${event.resultStatus ?? "PENDING_APPROVAL"}`,
+      destination: "dev-test",
+    };
+  }
   if (event.type === "LEAVE_REQUEST_SUBMITTED") {
     return {
       title: "มีใบลารอพิจารณา",
       description: "มีใบลาใหม่ในรายการอนุมัติของคุณ",
       destination: "approvals",
+    };
+  }
+
+  if (event.type === "LEAVE_REQUEST_DELETED") {
+    return {
+      title: "ใบลาถูกลบโดยผู้ดูแลระบบ",
+      description: "ยอดวันลาที่ใช้หรือจองไว้ได้รับการคืนตามสถานะใบลาแล้ว",
+      destination: null,
     };
   }
 

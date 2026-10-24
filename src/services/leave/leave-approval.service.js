@@ -11,7 +11,7 @@ const decisionSchema = z
     decision: z.enum(["APPROVE", "REJECT"]),
     comment: z.string().trim().min(1).max(2000),
     financialDisposition: z
-      .enum(["DEDUCT_PAY", "PAID_EXCEPTION", "USE_OTHER_ENTITLEMENT"])
+      .enum(["DEDUCT_PAY", "PAID_EXCEPTION"])
       .nullable()
       .optional(),
     financialReason: z.string().trim().max(2000).nullable().optional(),

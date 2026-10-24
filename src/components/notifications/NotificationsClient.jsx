@@ -115,7 +115,9 @@ export default function NotificationsClient({ userId }) {
         <ul className="mt-6 space-y-3">
           {items.map((item) => {
             const href =
-              item.destination === "request" && item.requestId
+              item.destination === "dev-test" && item.testRunId
+                ? `/manage/leave/dev-test?runId=${encodeURIComponent(item.testRunId)}`
+                : item.destination === "request" && item.requestId
                 ? `/${encodeURIComponent(userId)}/leave/${encodeURIComponent(item.requestId)}`
                 : `/${encodeURIComponent(userId)}/leave/approvals`;
 
@@ -162,9 +164,11 @@ export default function NotificationsClient({ userId }) {
                         อ่านแล้ว
                       </button>
                     ) : null}
-                    <Link href={href} className="text-sky-700 hover:underline">
-                      เปิดรายการ
-                    </Link>
+                    {item.destination ? (
+                      <Link href={href} className="text-sky-700 hover:underline">
+                        เปิดรายการ
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               </li>

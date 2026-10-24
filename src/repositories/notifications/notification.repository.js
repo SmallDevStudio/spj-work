@@ -13,11 +13,12 @@ function organizationRef(organizationId) {
   return adminFirestore.collection("organizations").doc(organizationId);
 }
 
-function isRecipient(event, employeeId) {
+function isRecipient(event, employeeId, uid) {
   return (
-    event.requesterEmployeeId === employeeId ||
-    event.newApproverEmployeeId === employeeId ||
-    (Array.isArray(event.approverEmployeeIds) &&
+    event.recipientUid === uid ||
+    (employeeId && event.requesterEmployeeId === employeeId) ||
+    (employeeId && event.newApproverEmployeeId === employeeId) ||
+    (employeeId && Array.isArray(event.approverEmployeeIds) &&
       event.approverEmployeeIds.includes(employeeId))
   );
 }
@@ -38,17 +39,23 @@ function readRef({ organizationId, uid, eventId }) {
     .doc(eventId);
 }
 
-async function getRecipientEvents({ organizationId, employeeId }) {
+async function getRecipientEvents({ organizationId, employeeId, uid }) {
   const collection =
     organizationRef(organizationId).collection("notificationOutbox");
 
   // Equality / array-contains อย่างละหนึ่งเงื่อนไข ไม่ผูกกับ composite index
   // ที่ยังไม่ได้ deploy; รวมและเรียงผลในฝั่ง server
-  const snapshots = await Promise.all([
-    collection.where("requesterEmployeeId", "==", employeeId).get(),
-    collection.where("newApproverEmployeeId", "==", employeeId).get(),
-    collection.where("approverEmployeeIds", "array-contains", employeeId).get(),
-  ]);
+  const queries = [collection.where("recipientUid", "==", uid).get()];
+
+  if (employeeId) {
+    queries.push(
+      collection.where("requesterEmployeeId", "==", employeeId).get(),
+      collection.where("newApproverEmployeeId", "==", employeeId).get(),
+      collection.where("approverEmployeeIds", "array-contains", employeeId).get(),
+    );
+  }
+
+  const snapshots = await Promise.all(queries);
 
   const unique = new Map();
 
@@ -61,7 +68,7 @@ async function getRecipientEvents({ organizationId, employeeId }) {
   return [...unique.values()]
     .filter((doc) => {
       const event = doc.data();
-      return isSupportedNotificationEvent(event.type) && isRecipient(event, employeeId);
+      return isSupportedNotificationEvent(event.type) && isRecipient(event, employeeId, uid);
     })
     .sort((a, b) => toMillis(b.data().createdAt) - toMillis(a.data().createdAt))
     .slice(0, 100);
@@ -72,11 +79,7 @@ export async function listOwnNotifications({
   uid,
   employeeId,
 }) {
-  if (!employeeId) {
-    return [];
-  }
-
-  const events = await getRecipientEvents({ organizationId, employeeId });
+  const events = await getRecipientEvents({ organizationId, employeeId, uid });
 
   if (events.length === 0) {
     return [];
@@ -91,15 +94,17 @@ export async function listOwnNotifications({
   return events.map((snapshot, index) => {
     const event = snapshot.data();
     const presentation = presentNotificationEvent(event, employeeId);
+    const rawRequestId = event.leaveRequestId ?? event.requestId;
     const requestId =
-      typeof event.requestId === "string" &&
-      /^[a-zA-Z0-9_-]{1,128}$/.test(event.requestId)
-        ? event.requestId
+      typeof rawRequestId === "string" &&
+      /^[a-zA-Z0-9_-]{1,128}$/.test(rawRequestId)
+        ? rawRequestId
         : null;
 
     return {
       id: snapshot.id,
       source: "LEAVE",
+      testRunId: event.type === "LEAVE_DEV_TEST_EVENT" ? event.testRunId ?? null : null,
       resource: requestId ? { type: "LEAVE_REQUEST", id: requestId } : null,
       requestId,
       title: presentation.title,
@@ -118,7 +123,6 @@ export async function markOwnNotificationRead({
   eventId,
 }) {
   if (
-    !employeeId ||
     typeof eventId !== "string" ||
     !/^[a-zA-Z0-9_-]{1,128}$/.test(eventId)
   ) {
@@ -137,7 +141,7 @@ export async function markOwnNotificationRead({
   if (
     !eventSnapshot.exists ||
     !isSupportedNotificationEvent(eventSnapshot.data().type) ||
-    !isRecipient(eventSnapshot.data(), employeeId)
+    !isRecipient(eventSnapshot.data(), employeeId, uid)
   ) {
     throw new ApplicationError({
       code: "NOTIFICATION_NOT_FOUND",

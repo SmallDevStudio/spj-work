@@ -1,7 +1,6 @@
 const FINANCIAL_DISPOSITIONS = new Set([
   "DEDUCT_PAY",
   "PAID_EXCEPTION",
-  "USE_OTHER_ENTITLEMENT",
 ]);
 
 function fail(code, message, status = 409, details = null) {

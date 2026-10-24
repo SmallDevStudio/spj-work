@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PERMISSIONS } from "@/constants/permissions";
+import { ROLES } from "@/constants/roles";
+import { serverEnv } from "@/config/env.server";
 import { requireAnyPermission } from "@/lib/auth/authorization";
 
 export const metadata = {
@@ -9,6 +11,12 @@ export const metadata = {
 };
 
 const sections = [
+  {
+    title: "ประวัติการลา",
+    description: "ค้นหาใบลา ดูผลอนุมัติ และตรวจรายการย้อนหลัง",
+    href: "/manage/leave/history",
+    permission: PERMISSIONS.LEAVE_READ_ALL,
+  },
   {
     title: "ประเภทการลา",
     description: "กำหนดประเภทและเงื่อนไขการลา",
@@ -57,6 +65,12 @@ export default async function ManageLeavePage() {
     session.access.permissions.includes(item.permission),
   );
 
+  const showDevTest =
+    process.env.NODE_ENV === "development" &&
+    process.env.LEAVE_DEV_TEST_ENABLED === "true" &&
+    /(?:-dev|-test)$/.test(serverEnv.firebaseAdminProjectId) &&
+    session.access.membership.role === ROLES.SUPERADMIN;
+
   return (
     <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
       <p className="text-sm font-semibold text-amber-700">Manage / Leave</p>
@@ -84,6 +98,15 @@ export default async function ManageLeavePage() {
           </Link>
         ))}
       </div>
+
+      {showDevTest ? (
+        <Link
+          href="/manage/leave/dev-test"
+          className="mt-6 inline-flex min-h-11 items-center rounded-xl border border-amber-300 bg-amber-50 px-5 text-sm font-bold text-amber-900"
+        >
+          เปิด Leave Dev Test →
+        </Link>
+      ) : null}
 
       {session.access.permissions.includes(PERMISSIONS.LEAVE_APPROVE) &&
       session.access.membership.employeeId ? (
