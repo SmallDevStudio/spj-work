@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- ให้ `/settings` ใช้ AppShell, Sidebar และ Header รูปแบบเดียวกับ Manage โดยคง URL และสิทธิ์เข้าถึงเดิม
 - ย้ายหน้าจัดการการลาไปที่ `/manage/leave` และสร้าง `/manage` เป็นหน้ารวมหมวดงาน พร้อมแก้ลิงก์เมนูการลา
 - แปลง Firestore Timestamp ในผลอนุมัติของ Dev Test เป็น ISO string ก่อนส่งจาก Server Component ไป Client Component เพื่อเปิดรายการจากการแจ้งเตือนได้หลังอนุมัติ
 

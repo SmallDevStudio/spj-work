@@ -8,6 +8,11 @@ import UserMenu from "@/components/layout/UserMenu";
 
 const pageTitles = [
   {
+    path: "/settings",
+    eyebrow: "SPJ Work",
+    title: "ตั้งค่าแอป",
+  },
+  {
     path: "/manage/company/work-schedules",
     eyebrow: "Company Management",
     title: "วันทำงานบริษัท",
