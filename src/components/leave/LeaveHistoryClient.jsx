@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const statusNames = {
   DRAFT: "ฉบับร่าง",
@@ -44,6 +46,7 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
         .some((value) => value?.toLowerCase().includes(term))),
     );
   }, [items, companyId, status, search, includeDeleted]);
+  const pagination = useTablePagination(visibleItems);
 
   async function loadPage(nextCursor, replace = false, showDeleted = includeDeleted) {
     setBusy(true);
@@ -132,17 +135,17 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
       <div className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <input
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => { setSearch(event.target.value); pagination.resetPage(); }}
           placeholder="ค้นหารหัสพนักงาน"
           aria-label="ค้นหารหัสพนักงาน"
           className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
         />
-        <select value={companyId} onChange={(event) => setCompanyId(event.target.value)}
+        <select value={companyId} onChange={(event) => { setCompanyId(event.target.value); pagination.resetPage(); }}
           aria-label="กรองบริษัท" className="rounded-xl border border-slate-300 px-3 py-2 text-sm">
           <option value="">ทุกบริษัทที่มีสิทธิ์</option>
           {companies.map((company) => <option key={company.id} value={company.id}>{company.nameTh || company.code}</option>)}
         </select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)}
+        <select value={status} onChange={(event) => { setStatus(event.target.value); pagination.resetPage(); }}
           aria-label="กรองสถานะ" className="rounded-xl border border-slate-300 px-3 py-2 text-sm">
           <option value="">ทุกสถานะ</option>
           {Object.entries(statusNames).map(([value, name]) => <option key={value} value={value}>{name}</option>)}
@@ -151,6 +154,7 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
           <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-3">
             <input type="checkbox" checked={includeDeleted} onChange={(event) => {
               setIncludeDeleted(event.target.checked);
+              pagination.resetPage();
               setDetail(null);
               loadPage(null, true, event.target.checked);
             }} />
@@ -173,7 +177,7 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
             </tr>
           </thead>
           <tbody>
-            {visibleItems.map((item) => (
+            {pagination.items.map((item) => (
               <tr key={item.id} className="border-t border-slate-100">
                 <td className="px-4 py-3 font-semibold">{item.employeeCode || item.employeeId}</td>
                 <td className="px-4 py-3">{companyNames[item.companyId] || item.companyId}</td>
@@ -189,10 +193,7 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
         {visibleItems.length === 0 ? <p className="p-5 text-sm text-slate-500">ไม่มีรายการในหน้าที่โหลด</p> : null}
       </div>
 
-      {cursor ? <button type="button" disabled={busy} onClick={() => loadPage(cursor)}
-        className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold disabled:opacity-50">
-        {busy ? "กำลังโหลด" : "โหลดรายการเพิ่มเติม"}
-      </button> : null}
+      <TablePagination id="leave-history" pagination={pagination} hasMore={Boolean(cursor)} loadingMore={busy} onLoadMore={() => loadPage(cursor)} />
 
       {detail ? (
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">

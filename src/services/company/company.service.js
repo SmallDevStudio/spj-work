@@ -57,6 +57,7 @@ export function serializeCompany(company) {
     phoneNumber: company.phoneNumber ?? null,
     email: company.email ?? null,
     logoUrl: company.logoUrl ?? null,
+    workSchedule: company.workSchedule ?? null,
     status: company.status,
   };
 }

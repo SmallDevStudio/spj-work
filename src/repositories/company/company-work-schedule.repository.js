@@ -157,6 +157,13 @@ export async function createCompanyWorkSchedule({
       createdBy: actor.uid,
     });
 
+    // Snapshot สำหรับหน้า Company; ประวัติ version ยังเป็นแหล่งข้อมูลอ้างอิงเมื่อคำนวณใบลาย้อนหลัง
+    transaction.update(companyRef, {
+      workSchedule: { effectiveFrom, workingWeekdays: normalizedDays },
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: actor.uid,
+    });
+
     transaction.set(auditRef, {
       organizationId,
       actor,

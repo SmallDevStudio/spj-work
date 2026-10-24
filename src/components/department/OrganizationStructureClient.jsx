@@ -22,6 +22,8 @@ import {
   updateDepartmentRequest,
 } from "@/services/department/organization-structure.api";
 import ManagePageHero from "@/components/layout/ManagePageHero";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -133,6 +135,7 @@ export default function OrganizationStructureClient({
       );
     });
   }, [departments, employeeMap, search, statusFilter]);
+  const pagination = useTablePagination(filteredDepartments);
 
   function openDialog() {
     setEditingDepartmentId(null);
@@ -251,14 +254,14 @@ export default function OrganizationStructureClient({
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setSearch(event.target.value); pagination.resetPage(); }}
                 placeholder="ค้นหาชื่อ รายละเอียด หรือหัวหน้าแผนก"
                 className="min-h-12 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
             </label>
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => { setStatusFilter(event.target.value); pagination.resetPage(); }}
               aria-label="กรองตามสถานะแผนก"
               className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
@@ -291,7 +294,7 @@ export default function OrganizationStructureClient({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredDepartments.map((department) => (
+                  {pagination.items.map((department) => (
                     <tr key={department.id} className="text-slate-700 hover:bg-slate-50/70 dark:text-slate-200 dark:hover:bg-slate-800/50">
                       <td className="px-4 py-4 font-semibold text-slate-950 dark:text-white">{department.nameTh}</td>
                       <td className="max-w-xs px-4 py-4 text-slate-600 dark:text-slate-300">{department.description || "—"}</td>
@@ -313,6 +316,7 @@ export default function OrganizationStructureClient({
               </table>
             </div>
           )}
+          <TablePagination id="departments" pagination={pagination} />
         </section>
       </main>
 

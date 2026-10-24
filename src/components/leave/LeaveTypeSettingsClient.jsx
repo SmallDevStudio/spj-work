@@ -6,6 +6,8 @@ import { HiOutlineCalendarDays } from "react-icons/hi2";
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
 import LeaveTypeEditor from "@/components/leave/LeaveTypeEditor";
 import LeaveTypeCreate from "@/components/leave/LeaveTypeCreate";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const countingLabels = {
   WORKING_DAYS: "วันทำงาน",
@@ -37,6 +39,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
   const [message, setMessage] = useState("");
   const [editingItem, setEditingItem] = useState(null);
   const [creating, setCreating] = useState(false);
+  const pagination = useTablePagination(items);
 
   useEffect(() => {
     if (!companyId) return;
@@ -66,6 +69,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
   }, [companyId]);
 
   function selectCompany(value) {
+    pagination.resetPage();
     setCompanyId(value);
     setItems([]);
     setError("");
@@ -294,7 +298,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {items.map((item) => (
+                    {pagination.items.map((item) => (
                       <tr key={item.id}>
                         <td className="p-4">
                           <p className="font-semibold">{item.nameTh}</p>
@@ -338,6 +342,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
                 </table>
               </div>
             )}
+            <TablePagination id="leave-types" pagination={pagination} />
           </section>
         </>
       )}

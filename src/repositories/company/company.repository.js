@@ -74,6 +74,7 @@ export async function createCompany({ organizationId, data, actor }) {
       phoneNumber: data.phoneNumber,
       email: data.email,
       logoUrl: data.logoUrl,
+      workSchedule: null,
       status: data.status,
       isDeleted: false,
       createdAt: FieldValue.serverTimestamp(),
@@ -128,13 +129,21 @@ export async function updateCompany({ organizationId, companyId, data, actor }) 
   const root = getOrganizationRef(organizationId);
   const ref = root.collection("companies").doc(companyId);
   await adminFirestore.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(ref);
+    const [snapshot, schedules] = await Promise.all([
+      transaction.get(ref),
+      transaction.get(ref.collection("workScheduleVersions").limit(101)),
+    ]);
     const before = snapshot.data();
     if (!snapshot.exists || before?.isDeleted === true) throw new ApplicationError({
       code: "COMPANY_NOT_FOUND", message: "ไม่พบบริษัท", status: 404,
     });
+    const latest = schedules.docs.reduce((item, doc) => !item || doc.id > item.id ? doc : item, null);
     transaction.update(ref, {
-      ...data, updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.uid,
+      ...data,
+      ...(before.workSchedule == null && latest ? { workSchedule: {
+        effectiveFrom: latest.id, workingWeekdays: latest.data().workingWeekdays,
+      } } : {}),
+      updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.uid,
     });
     transaction.set(root.collection("auditLogs").doc(), {
       organizationId, actor, action: "COMPANY_UPDATE", entityType: "COMPANY",

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 function getErrorMessage(error) {
   const apiError = error?.response?.data?.error;
@@ -67,8 +69,10 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
     () => templates.find((item) => item.code === templateCode),
     [templates, templateCode],
   );
+  const pagination = useTablePagination(employees);
 
   function changeCompany(value) {
+    pagination.resetPage();
     setCompanyId(value);
     setTemplates([]);
     setEmployees([]);
@@ -304,7 +308,7 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {employees.map((employee) => (
+                  {pagination.items.map((employee) => (
                     <tr key={employee.id}>
                       <td className="p-4">
                         <input
@@ -328,6 +332,7 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
                 </tbody>
               </table>
             </div>
+            <TablePagination id="template-candidates" pagination={pagination} />
           </section>
 
           <button

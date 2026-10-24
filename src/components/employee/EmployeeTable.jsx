@@ -6,6 +6,7 @@ import { EMPLOYMENT_STATUS_LABELS } from "@/constants/employees";
 
 export default function EmployeeTable({
   employees,
+  allEmployees = employees,
   departments,
   companies,
   showCompany,
@@ -21,7 +22,7 @@ export default function EmployeeTable({
   const companyNames = new Map(companies.map((item) => [item.id, item.nameTh]));
 
   const employeeNames = new Map(
-    employees.map((item) => [item.id, item.displayName || item.employeeCode]),
+    allEmployees.map((item) => [item.id, item.displayName || item.employeeCode]),
   );
 
   if (employees.length === 0) {

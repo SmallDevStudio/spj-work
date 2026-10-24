@@ -1,30 +1,69 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
+import { HiArrowLeft, HiOutlineBuildingOffice2, HiPlus } from "react-icons/hi2";
 import ManagePageHero from "@/components/layout/ManagePageHero";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
+import CompanyWorkScheduleClient, { formatWorkingDays } from "@/components/company/CompanyWorkScheduleClient";
 import {
   createCompanyRequest, deleteCompanyRequest, getCompaniesRequest,
   getCompanyApiErrorMessage, updateCompanyRequest,
 } from "@/services/company/company.api";
 
 const blank = { code: "", nameTh: "", description: "", address: "", phoneNumber: "", email: "", logoUrl: "", status: "ACTIVE" };
-const fields = [
-  { name: "nameTh", label: "ชื่อบริษัท *", required: true, maxLength: 150 },
-  { name: "address", label: "ที่อยู่", maxLength: 1000 },
-  { name: "phoneNumber", label: "เบอร์โทร", maxLength: 50 },
-  { name: "email", label: "อีเมล", type: "email", maxLength: 254 },
-  { name: "logoUrl", label: "URL โลโก้ (HTTPS)", type: "url", maxLength: 1000 },
-];
+const inputClass = "mt-2 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-950 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
-export default function CompanyDirectoryClient() {
+function CompanyLogo({ company, size = 64 }) {
+  const [failed, setFailed] = useState(false);
+  return <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" style={{ width: size, height: size }}>
+    {company.logoUrl && !failed ? <Image unoptimized src={company.logoUrl} width={size} height={size} alt={`โลโก้ ${company.nameTh}`} className="h-full w-full object-contain" onError={() => setFailed(true)} /> :
+      <HiOutlineBuildingOffice2 className="size-7" aria-hidden="true" />}
+  </div>;
+}
+
+function CompanyForm({ form, setForm, editing, busy, onSubmit, onCancel }) {
+  const fields = [
+    { key: "nameTh", label: "ชื่อบริษัท", required: true, maxLength: 150 },
+    { key: "email", label: "อีเมล", type: "email", maxLength: 254 },
+    { key: "phoneNumber", label: "เบอร์โทร", type: "tel", maxLength: 50 },
+    { key: "address", label: "ที่อยู่", maxLength: 1000 },
+  ];
+  return <form onSubmit={onSubmit} className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex items-center gap-4"><CompanyLogo key={form.logoUrl} company={form} size={72} />
+      <div><h2 className="text-lg font-bold text-slate-950 dark:text-white">ข้อมูลบริษัท</h2>
+        <p className="text-sm text-slate-500">รูปโลโก้แสดงจาก URL การอัปโหลดรูปจะเพิ่มในขั้นต่อไป</p></div></div>
+    <div className="grid gap-5 sm:grid-cols-2">
+      {!editing && <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">รหัสบริษัท *
+        <input required maxLength={20} value={form.code} onChange={(event) => setForm((old) => ({ ...old, code: event.target.value.toUpperCase() }))} className={inputClass} /></label>}
+      {fields.map((field) => <label key={field.key} className="text-sm font-semibold text-slate-700 dark:text-slate-200">{field.label}{field.required ? " *" : ""}
+        <input required={field.required} maxLength={field.maxLength} type={field.type ?? "text"} value={form[field.key]} onChange={(event) => setForm((old) => ({ ...old, [field.key]: event.target.value }))} className={inputClass} /></label>)}
+      <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">สถานะ
+        <select value={form.status} onChange={(event) => setForm((old) => ({ ...old, status: event.target.value }))} className={inputClass}>
+          <option value="ACTIVE">ใช้งาน</option><option value="INACTIVE">ไม่ใช้งาน</option>
+        </select></label>
+      <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">URL โลโก้ (HTTPS)
+        <input type="url" maxLength={1000} value={form.logoUrl} onChange={(event) => setForm((old) => ({ ...old, logoUrl: event.target.value }))} className={inputClass} placeholder="https://..." /></label>
+    </div>
+    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">รายละเอียด
+      <textarea rows={3} maxLength={500} value={form.description} onChange={(event) => setForm((old) => ({ ...old, description: event.target.value }))} className={inputClass} /></label>
+    <div className="flex flex-wrap gap-3"><button disabled={busy} className="min-h-11 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 disabled:opacity-50" type="submit">{busy ? "กำลังบันทึก" : "บันทึกข้อมูลบริษัท"}</button>
+      <button disabled={busy} type="button" onClick={onCancel} className="min-h-11 rounded-xl border border-slate-300 px-5 text-sm font-semibold dark:border-slate-700 dark:text-white">ยกเลิก</button></div>
+  </form>;
+}
+
+export default function CompanyDirectoryClient({ canManageSchedule = false }) {
   const [companies, setCompanies] = useState([]);
+  const [screen, setScreen] = useState("list");
+  const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(blank);
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const pagination = useTablePagination(companies);
+  const selected = companies.find((item) => item.id === selectedId);
 
   useEffect(() => {
     let active = true;
@@ -34,17 +73,17 @@ export default function CompanyDirectoryClient() {
     return () => { active = false; };
   }, []);
 
-  function openForm(company = null) {
-    setEditingId(company?.id ?? null);
-    setForm(company ? Object.fromEntries(Object.keys(blank).map((key) => [key, company[key] ?? ""])) : blank);
-    setShowForm(true);
-    setError("");
-    setMessage("");
+  function openCreate() { setSelectedId(null); setForm(blank); setScreen("create"); setError(""); setMessage(""); }
+  function openDetail(company) { setSelectedId(company.id); setScreen("detail"); setError(""); setMessage(""); }
+  function openEdit(company) {
+    setSelectedId(company.id);
+    setForm(Object.fromEntries(Object.keys(blank).map((key) => [key, company[key] ?? ""])));
+    setScreen("edit"); setError(""); setMessage("");
   }
+  function returnToList() { setScreen("list"); setSelectedId(null); setError(""); }
 
   async function save(event) {
-    event.preventDefault();
-    setBusy(true); setError(""); setMessage("");
+    event.preventDefault(); setBusy(true); setError(""); setMessage("");
     try {
       const input = {
         nameTh: form.nameTh.trim(), description: form.description.trim() || null,
@@ -52,58 +91,75 @@ export default function CompanyDirectoryClient() {
         email: form.email.trim() || null, logoUrl: form.logoUrl.trim() || null,
         status: form.status,
       };
-      const item = editingId
-        ? await updateCompanyRequest(editingId, input)
-        : await createCompanyRequest({ ...input, code: form.code.trim().toUpperCase() });
+      const item = screen === "edit" ? await updateCompanyRequest(selectedId, input) :
+        await createCompanyRequest({ ...input, code: form.code.trim().toUpperCase() });
       setCompanies((current) => [...current.filter((entry) => entry.id !== item.id), item]
         .sort((a, b) => a.nameTh.localeCompare(b.nameTh, "th")));
-      setShowForm(false);
-      setMessage(`บันทึกข้อมูล ${item.nameTh} แล้ว`);
+      setSelectedId(item.id); setScreen("detail"); setMessage(`บันทึกข้อมูล ${item.nameTh} แล้ว`);
     } catch (cause) { setError(getCompanyApiErrorMessage(cause)); }
     finally { setBusy(false); }
   }
 
   async function remove(company) {
     const Swal = (await import("sweetalert2")).default;
-    const result = await Swal.fire({
-      title: `ลบบริษัท ${company.nameTh}?`,
+    const result = await Swal.fire({ title: `ลบบริษัท ${company.nameTh}?`,
       text: "ลบได้เฉพาะบริษัทที่ไม่มีพนักงานและใบลาอ้างอิง ข้อมูลประวัติจะถูกเก็บไว้",
       icon: "warning", showCancelButton: true, confirmButtonText: "ลบบริษัท",
-      cancelButtonText: "ยกเลิก", confirmButtonColor: "#be123c",
-    });
+      cancelButtonText: "ยกเลิก", confirmButtonColor: "#be123c" });
     if (!result.isConfirmed) return;
     setBusy(true); setError(""); setMessage("");
     try {
       await deleteCompanyRequest(company.id);
       setCompanies((current) => current.filter((item) => item.id !== company.id));
-      setMessage(`ลบบริษัท ${company.nameTh} แล้ว`);
+      setScreen("list"); setSelectedId(null); setMessage(`ลบบริษัท ${company.nameTh} แล้ว`);
     } catch (cause) { setError(getCompanyApiErrorMessage(cause)); }
     finally { setBusy(false); }
   }
 
-  const inputClass = "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
-  return (
-    <div className="space-y-6">
-      <ManagePageHero eyebrow="Company Management" title="ข้อมูลบริษัท"
-        description="ข้อมูลติดต่อและสถานะบริษัทในกลุ่ม SPJ รวมถึงวันทำงานที่ใช้คำนวณวันลา"
-        action={<button type="button" onClick={() => openForm()} className="min-h-11 rounded-xl bg-amber-400 px-5 font-bold text-slate-950">+ เพิ่มบริษัท</button>} />
-      {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
-      {message && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-700">{message}</p>}
-      {showForm && <form onSubmit={save} className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-bold dark:text-white">{editingId ? "แก้ไขบริษัท" : "เพิ่มบริษัท"}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {!editingId && <label className="text-sm font-semibold dark:text-white">รหัสบริษัท *<input required maxLength={20} value={form.code} onChange={(event) => setForm((old) => ({ ...old, code: event.target.value.toUpperCase() }))} className={inputClass} /></label>}
-          {fields.map((field) => <label key={field.name} className="text-sm font-semibold dark:text-white">{field.label}<input required={field.required} maxLength={field.maxLength} type={field.type ?? "text"} value={form[field.name]} onChange={(event) => setForm((old) => ({ ...old, [field.name]: event.target.value }))} className={inputClass} /></label>)}
-          <label className="text-sm font-semibold dark:text-white">สถานะ<select value={form.status} onChange={(event) => setForm((old) => ({ ...old, status: event.target.value }))} className={inputClass}><option value="ACTIVE">ใช้งาน</option><option value="INACTIVE">ไม่ใช้งาน</option></select></label>
-        </div>
-        <label className="mt-4 block text-sm font-semibold dark:text-white">รายละเอียด<textarea rows={3} maxLength={500} value={form.description} onChange={(event) => setForm((old) => ({ ...old, description: event.target.value }))} className={inputClass} /></label>
-        <div className="mt-5 flex gap-3"><button disabled={busy} type="submit" className="rounded-xl bg-amber-400 px-5 py-3 font-bold text-slate-950 disabled:opacity-50">{busy ? "กำลังบันทึก" : "บันทึก"}</button><button type="button" disabled={busy} onClick={() => setShowForm(false)} className="rounded-xl border px-5 py-3 dark:text-white">ยกเลิก</button></div>
-      </form>}
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="border-b p-5 font-bold dark:border-slate-800 dark:text-white">รายชื่อบริษัท ({companies.length})</h2>
-        {loading ? <p className="p-6 text-slate-500">กำลังโหลดข้อมูล</p> : companies.length === 0 ? <p className="p-6 text-slate-500">ยังไม่มีบริษัท</p> :
-          <div className="overflow-x-auto"><table className="w-full min-w-[740px] text-left text-sm"><thead className="bg-slate-50 dark:bg-slate-950"><tr>{["รหัส", "บริษัท", "ติดต่อ", "สถานะ", "จัดการ"].map((heading) => <th key={heading} className="px-5 py-4">{heading}</th>)}</tr></thead><tbody className="divide-y dark:divide-slate-800">{companies.map((company) => <tr key={company.id} className="dark:text-slate-200"><td className="px-5 py-4 font-bold">{company.code}</td><td className="px-5 py-4"><span className="font-semibold">{company.nameTh}</span><p className="text-xs text-slate-500">{company.description || company.address || "—"}</p></td><td className="px-5 py-4">{company.email || company.phoneNumber || "—"}</td><td className="px-5 py-4">{company.status === "ACTIVE" ? "ใช้งาน" : "ไม่ใช้งาน"}</td><td className="space-x-3 px-5 py-4"><button type="button" disabled={busy} onClick={() => openForm(company)} className="font-semibold text-amber-700">แก้ไข</button><button type="button" disabled={busy} onClick={() => remove(company)} className="font-semibold text-rose-700">ลบ</button></td></tr>)}</tbody></table></div>}
+  const updateSchedule = (workSchedule) => {
+    setCompanies((current) => current.map((company) => company.id === selectedId ? { ...company, workSchedule } : company));
+  };
+
+  return <div className="space-y-6">
+    <ManagePageHero eyebrow="Company Management" title={screen === "create" ? "เพิ่มบริษัท" : screen === "edit" ? `แก้ไข ${selected?.nameTh ?? "บริษัท"}` : screen === "detail" ? selected?.nameTh ?? "ข้อมูลบริษัท" : "ข้อมูลบริษัท"}
+      description={screen === "list" ? "ข้อมูลติดต่อและวันทำงานของบริษัทในกลุ่ม SPJ" : "ข้อมูลบริษัทและวันทำงานอยู่ในหน้ารายละเอียดเดียวกัน"}
+      action={screen === "list" ? <button type="button" onClick={openCreate} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950"><HiPlus className="size-5" />เพิ่มบริษัท</button> :
+        <button type="button" onClick={returnToList} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-600 px-5 text-sm font-semibold text-white"><HiArrowLeft className="size-5" />กลับหน้ารวม</button>} />
+    {error && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
+    {message && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{message}</p>}
+
+    {screen === "list" && <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 dark:border-slate-800"><h2 className="font-bold dark:text-white">รายชื่อบริษัท</h2><span className="text-sm text-slate-500">{companies.length} บริษัท</span></div>
+      {loading ? <p className="p-7 text-sm text-slate-500">กำลังโหลดข้อมูล</p> : companies.length === 0 ? <p className="p-7 text-sm text-slate-500">ยังไม่มีบริษัท</p> :
+        <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300"><tr>
+          {['บริษัท', 'ติดต่อ', 'วันทำงาน', 'สถานะ', 'จัดการ'].map((heading) => <th key={heading} scope="col" className="px-5 py-4 font-semibold">{heading}</th>)}
+        </tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{pagination.items.map((company) => <tr key={company.id} className="text-slate-700 dark:text-slate-200">
+          <td className="px-5 py-4"><div className="flex items-center gap-3"><CompanyLogo key={company.logoUrl ?? company.id} company={company} size={44} /><div><p className="font-bold">{company.nameTh}</p><p className="text-xs text-slate-500">{company.code}</p></div></div></td>
+          <td className="px-5 py-4">{company.email || company.phoneNumber || "—"}</td>
+          <td className="px-5 py-4">{company.workSchedule ? formatWorkingDays(company.workSchedule.workingWeekdays) : "ดูรายละเอียด"}</td>
+          <td className="px-5 py-4">{company.status === "ACTIVE" ? "ใช้งาน" : "ไม่ใช้งาน"}</td>
+          <td className="whitespace-nowrap px-5 py-4"><button type="button" onClick={() => openDetail(company)} className="font-semibold text-sky-700 dark:text-sky-300">ดูข้อมูล</button><button type="button" onClick={() => openEdit(company)} className="ml-4 font-semibold text-amber-700 dark:text-amber-300">แก้ไข</button><button type="button" disabled={busy} onClick={() => remove(company)} className="ml-4 font-semibold text-rose-700 disabled:opacity-50">ลบ</button></td>
+        </tr>)}</tbody></table></div>}
+      <TablePagination id="companies" pagination={pagination} />
+    </section>}
+
+    {screen === "create" && <CompanyForm form={form} setForm={setForm} busy={busy} onSubmit={save} onCancel={returnToList} />}
+
+    {screen === "detail" && selected && <div className="space-y-5">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4"><CompanyLogo key={selected.logoUrl ?? selected.id} company={selected} size={76} />
+          <div><h2 className="text-xl font-bold dark:text-white">{selected.nameTh}</h2><p className="text-sm text-slate-500">{selected.code} · {selected.status === "ACTIVE" ? "ใช้งาน" : "ไม่ใช้งาน"}</p></div></div>
+          <button type="button" onClick={() => openEdit(selected)} className="min-h-11 rounded-xl bg-amber-400 px-5 font-bold text-slate-950">แก้ไขข้อมูล</button></div>
+        <dl className="mt-6 grid gap-5 border-t border-slate-200 pt-5 text-sm sm:grid-cols-2 dark:border-slate-800">{[
+          ["รายละเอียด", selected.description], ["ที่อยู่", selected.address], ["เบอร์โทร", selected.phoneNumber], ["อีเมล", selected.email],
+        ].map(([label, value]) => <div key={label}><dt className="text-slate-500">{label}</dt><dd className="mt-1 font-semibold text-slate-950 dark:text-white">{value || "—"}</dd></div>)}</dl>
       </section>
-    </div>
-  );
+      {canManageSchedule && selected.status === "ACTIVE" && <CompanyWorkScheduleClient key={selected.id} company={selected} readOnly />}
+    </div>}
+
+    {screen === "edit" && selected && <div className="space-y-5">
+      <CompanyForm form={form} setForm={setForm} editing busy={busy} onSubmit={save} onCancel={() => setScreen("detail")} />
+      {canManageSchedule && selected.status === "ACTIVE" && <CompanyWorkScheduleClient key={selected.id} company={selected} onSaved={updateSchedule} />}
+    </div>}
+  </div>;
 }

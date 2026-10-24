@@ -37,6 +37,8 @@ import {
 
 import EmployeeTable from "@/components/employee/EmployeeTable";
 import ManagePageHero from "@/components/layout/ManagePageHero";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -342,6 +344,7 @@ export default function EmployeeDirectoryClient({
     statusFilter,
     showCompany,
   ]);
+  const pagination = useTablePagination(filteredEmployees);
 
   function openDialog() {
     setEditingEmployeeId(null);
@@ -593,7 +596,7 @@ export default function EmployeeDirectoryClient({
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setSearch(event.target.value); pagination.resetPage(); }}
                 placeholder="ค้นหารหัส ชื่อ ตำแหน่ง อีเมล หรือเบอร์โทร"
                 className="min-h-12 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-950 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
@@ -602,7 +605,7 @@ export default function EmployeeDirectoryClient({
             {showCompany && (
               <select
                 value={companyFilter}
-                onChange={(event) => setCompanyFilter(event.target.value)}
+                onChange={(event) => { setCompanyFilter(event.target.value); pagination.resetPage(); }}
                 aria-label="กรองตามบริษัท"
                 className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               >
@@ -617,7 +620,7 @@ export default function EmployeeDirectoryClient({
 
             <select
               value={departmentFilter}
-              onChange={(event) => setDepartmentFilter(event.target.value)}
+                onChange={(event) => { setDepartmentFilter(event.target.value); pagination.resetPage(); }}
               aria-label="กรองตามแผนก"
               className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
@@ -631,7 +634,7 @@ export default function EmployeeDirectoryClient({
 
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => { setStatusFilter(event.target.value); pagination.resetPage(); }}
               aria-label="กรองตามสถานะ"
               className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
@@ -654,7 +657,8 @@ export default function EmployeeDirectoryClient({
           </div>
 
           <EmployeeTable
-            employees={filteredEmployees}
+            employees={pagination.items}
+            allEmployees={employees}
             departments={departments}
             companies={companies}
             showCompany={showCompany}
@@ -663,6 +667,7 @@ export default function EmployeeDirectoryClient({
             onEdit={openEditDialog}
             onDelete={handleDelete}
           />
+          <TablePagination id="employees" pagination={pagination} />
         </section>
       </main>
 

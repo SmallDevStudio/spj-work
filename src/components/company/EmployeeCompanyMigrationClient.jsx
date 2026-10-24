@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
+import TablePagination from "@/components/common/TablePagination";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 function getErrorMessage(error) {
   return (
@@ -51,6 +53,7 @@ export default function EmployeeCompanyMigrationClient() {
     () => employees.filter((employee) => !employee.companyId),
     [employees],
   );
+  const pagination = useTablePagination(unassigned);
 
   function toggleEmployee(id) {
     setSelectedIds((current) =>
@@ -251,7 +254,7 @@ export default function EmployeeCompanyMigrationClient() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {unassigned.map((employee) => (
+                {pagination.items.map((employee) => (
                   <tr key={employee.id}>
                     <td className="p-4">
                       <input
@@ -274,6 +277,7 @@ export default function EmployeeCompanyMigrationClient() {
             </table>
           </div>
         )}
+        <TablePagination id="employee-company-migration" pagination={pagination} />
       </section>
     </div>
   );
