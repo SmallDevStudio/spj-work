@@ -40,8 +40,9 @@ integration stays in `src/lib`; Next.js pages and route handlers stay in
 - In-app notifications are owned by Notifications, regardless of whether the
   originating event came from Leave, Assets, or Helpdesk. Notification
   responses must omit leave reasons and financial decisions.
-- External clients use the same versioned resources with scoped Bearer tokens.
-  An API key must not grant implicit access to every company's employee data.
+- Scoped Bearer tokens and API keys for external clients are planned, but
+  issuance and verification endpoints are not implemented yet. When added,
+  API keys must not grant implicit access to every company's employee data.
 
 Existing Firestore collection `leaveHrDelegations` is retained by this route
 refactor so previously assigned grants continue to work. A later migration to
@@ -52,3 +53,13 @@ The `notificationOutbox` query is a compatibility reader for existing Leave
 events. It is not a general delivery queue API. Before introducing high volume
 or external delivery, materialize per-recipient notifications and paginate them
 by creation time; migrate old events without exposing the internal outbox.
+
+## Leave verification endpoints
+
+Manage history uses `GET /api/v1/leave/requests` and
+`GET /api/v1/leave/requests/[requestId]`. A SUPERADMIN or ADMIN can soft delete
+with `DELETE /api/v1/leave/requests/[requestId]` and a JSON `reason`.
+The deleted request stays available to authorized managers for audit, while
+balance calculations exclude it. The development-only SUPERADMIN simulator
+uses `/api/v1/leave/dev-tests` and isolated `leaveDevTestRuns` documents; it
+does not modify real employee leave balances. See [leave testing](LEAVE_TESTING.md).

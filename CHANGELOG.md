@@ -1,91 +1,29 @@
 # Changelog
 
-การเปลี่ยนแปลงที่สำคัญทั้งหมดของ SPJ Work จะถูกบันทึกไว้ในไฟล์นี้
+บันทึกการเปลี่ยนแปลงของ SPJ Work ที่ยังไม่ออกเวอร์ชัน 1.0.0
 
-รูปแบบเอกสารอ้างอิงจาก Keep a Changelog และโครงการใช้ Semantic Versioning
-
-## [Unreleased]
+## [Unreleased] — 2026-10-24
 
 ### Added
 
-- SPJ Work Service Portal ที่ `/app`
-- Permission-aware service launcher
-- Employee Self-Service workspace ที่ `/app/me`
-- HR Management workspace ที่ `/app/hr`
-- Organization Settings workspace ที่ `/app/settings`
-- Route Groups สำหรับแยก Portal และ Workspace layouts
-- Workspace-aware Sidebar และ Header
-- Role `ADMIN` สำหรับผู้ดูแลระบบระดับบริษัท
-- Permission สำหรับ Portal และแต่ละ Service
-- Employee permission แบบ Own, Team และ All
-- HR Settings permissions
-- Google Workspace Sync permissions
-- Responsive application shell สำหรับ Desktop, Tablet และ Mobile
-- Permission-aware sidebar navigation
-- Responsive header และ mobile navigation
-- User menu พร้อมข้อมูลบัญชีและ Role
-- Light และ Dark theme
-- Secure logout workflow
-- Root route redirect ตามสถานะ Session
-- Firestore Security Rules แบบ server-only access
-- Server-side permission guards
-- Next.js route protection
-- Security headers สำหรับ Production
-- Firebase CLI configuration
-- Firebase Admin SDK integration
-- Google Workspace authentication foundation
-- Emergency SUPERADMIN authentication
-- Firebase Admin Session Cookie
-- Signed CSRF token protection
-- Request Origin และ Content-Type validation
-- Platform user และ organization membership validation
-- Role-based access control
-- Effective permission calculation
-- Permission Group foundation
-- Login audit logging
-- Soft-delete fields สำหรับข้อมูลสำคัญ
-- Redux Toolkit session foundation
-- Axios API client
-- React Hook Form และ Zod validation
-- Firebase Development environment
-- Vercel deployment
-- GitHub deployment workflow
+- Portal และ URL บริการส่วนตัว `/<userId>`; งานจัดการรวมที่ `/manage` และตั้งค่าแอปที่ `/settings`
+- แบ่ง API และไฟล์ตาม Auth, Access, Company, Department, Employee, Leave และ Notifications
+- ระบบบริษัท SPJ01/SPJ02 พร้อมขอบเขตการเห็นข้อมูลของสมาชิก การกำหนดสิทธิ์พนักงาน และการมอบหมายงานอนุมัติ HR
+- ข้อมูลลา: ประเภท Template การผูก Template ยอดนำเข้า/ยอดปรับ วันหยุดออนไลน์และวันหยุดเพิ่มเอง ตารางวันทำงานรายบริษัท ฉบับร่าง การส่งใบลา ยอดคงเหลือและใบลารออนุมัติ
+- เมื่อใบลาเกินสิทธิ์ ให้หัวหน้าและ HR อนุมัติคนละฝ่าย; HR ระบุแนวทางจัดการวันเกินและเหตุผล หากฝ่ายใดปฏิเสธใบลาจะถูกปฏิเสธ
+- การแจ้งเตือนภายในแอปสำหรับการส่งใบลา ความคืบหน้า การเปลี่ยนผู้รับงาน และการลบใบลา
+- `/manage/leave/history` สำหรับประวัติใบลา; SUPERADMIN/ADMIN ลบแบบ soft delete พร้อมเหตุผลและ audit log การคำนวณยอดวันลาไม่นับใบที่ลบ
+- `/manage/leave/dev-test` สำหรับ SUPERADMIN จำลองกฎนับวัน การอนุมัติ การปฏิเสธ ยอดคงเหลือและการแจ้งเตือนใน development project เท่านั้น โดยข้อมูลทดสอบแยกจากใบลาจริง
+- เอกสารวิธี pull และทดสอบระบบลาที่ `docs/LEAVE_TESTING.md`
 
 ### Changed
 
-- เปลี่ยน authenticated landing page จาก `/dashboard` เป็น `/app`
-- แยกเมนู Employee Self-Service ออกจาก HR Management
-- จำกัด Employee ให้เข้าถึงเฉพาะข้อมูลและบริการของตนเอง
-- จำกัด HR Management ตาม service และ data permissions
-- เปิด Organization Settings เฉพาะ `ADMIN` และ `SUPERADMIN`
-- เก็บ `/dashboard` เป็น legacy redirect ไป `/app`
-- จำกัด Google sign-in ให้ใช้โดเมน `@superjeew.com`
-- จำกัด Email/Password sign-in สำหรับ Emergency SUPERADMIN เท่านั้น
-- แยก Firebase Client และ Firebase Admin environment variables
-- แยก Redux store สำหรับ authenticated application
-- กำหนด `firebase-admin` เป็นเวอร์ชัน `13.7.0` เพื่อรองรับ Vercel
+- เลิกใช้ route กลุ่ม `/app`, `/dashboard`, `/api/v1/hr` และ API ชื่อพหูพจน์เดิมที่ไม่ตรงโมดูล
+- นับวันลาจากการตั้งค่าวันทำงานของบริษัท ปฏิทินวันหยุด และวิธีนับของประเภทการลา; ตรวจยอดด้วยกฎร่วมกันและป้องกันใบลาที่วันทับกัน
+- แยกหน้าและ service สำหรับ Notifications กับ Access ออกจาก Leave
 
-### Security
+### Known limitations
 
-- ตรวจ Permission ฝั่ง Server ก่อนเปิดแต่ละ Workspace
-- ไม่ใช้ชื่อ Role เพื่อตรวจสิทธิ์ใน UI โดยตรง
-- แยก System, Organization, HR และ Employee permissions
-- เก็บ legacy `employee.read` ระหว่างการย้ายไปใช้ Own, Team และ All
-- ใช้ `httpOnly`, `Secure`, `SameSite=Strict` และ Host-only Session Cookie
-- ใช้ HMAC-signed CSRF token
-- ตรวจ CSRF token ด้วย constant-time comparison
-- ตรวจ Firebase ID token และ session revocationฝั่ง Server
-- ตรวจการ Login ต้องเกิดภายใน 5 นาที
-- ตรวจ User, Organization, Membership, Role และ Authentication Provider
-- ปิดการอ่านและเขียน Firestore โดยตรงจาก Client
-- ป้องกัน Secret และ Service Account key ไม่ให้ถูก commit
-- บันทึก IP address และ User-Agent ใน Login Audit Log
-- เพิ่ม HTTP security headers
-- ปิด `X-Powered-By` header
-
-### Fixed
-
-- แก้ Firebase Admin SDK บน Vercelโดยกำหนดเวอร์ชัน `13.7.0`
-- แก้ React ESLint ไม่ให้เข้าถึง `ref.current` ระหว่าง render
-- แก้ Zod email validation ให้รองรับเวอร์ชันที่ติดตั้ง
-- ป้องกัน Firebase Client และ Admin SDK initialize ซ้ำ
+- วันเริ่มรอบสิทธิ์หลักยังเป็น 1 มกราคม; ยังไม่มีหน้าตั้งค่าวัน reset และงานยกยอดอัตโนมัติครบวงจร
+- Dev Test จำลองกฎและบันทึกการแจ้งเตือนจริงของบัญชีทดสอบ แต่ไม่ได้สร้างใบลาพนักงานจริง การทดสอบกับ Firebase Auth/Firestore จริงยังต้องทำตามคู่มือ
+- การส่งอีเมล/LINE, Bearer token/API key สำหรับระบบภายนอก, Assets/IT/Projects และการปรับ UX Manage ยังไม่เสร็จ
