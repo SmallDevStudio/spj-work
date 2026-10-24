@@ -13,13 +13,13 @@ export const WORKSPACE_SETTINGS = Object.freeze({
   hr: {
     name: "จัดการ SPJ Work",
     shortName: "Management",
-    homeHref: "/manage",
+    homeHref: "/manage/dashboard",
     activeClassName: "bg-amber-400 text-slate-950 shadow-sm",
     brandClassName: "bg-amber-400 text-slate-950",
     navigation: [
       {
         name: "Dashboard",
-        href: "/manage",
+        href: "/manage/dashboard",
         icon: HiOutlineHome,
         permissions: [PERMISSIONS.SERVICE_HR_ACCESS, PERMISSIONS.ORGANIZATION_MANAGE],
         enabled: true,
@@ -70,6 +70,11 @@ export const WORKSPACE_SETTINGS = Object.freeze({
           PERMISSIONS.LEAVE_WORKFLOW_MANAGE,
         ],
         enabled: true,
+        children: [
+          { name: "Role พนักงาน", href: "/manage/access/employee-roles", permissions: [PERMISSIONS.ROLE_MANAGE] },
+          { name: "สิทธิ์รายบริษัท", href: "/manage/access/company-assignments", permissions: [PERMISSIONS.ORGANIZATION_MANAGE] },
+          { name: "มอบสิทธิ์อนุมัติลา", href: "/manage/access/delegations/leave-approval", permissions: [PERMISSIONS.LEAVE_WORKFLOW_MANAGE] },
+        ],
       },
       {
         name: "ตั้งค่าแอป",

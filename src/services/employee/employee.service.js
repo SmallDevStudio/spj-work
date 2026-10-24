@@ -17,6 +17,7 @@ import {
 import { PERMISSIONS } from "@/constants/permissions";
 import { canAccessCompany } from "@/lib/auth/company-access";
 import { getEmployeeById } from "@/repositories/employee/employee.repository";
+import { softDeleteEmployee } from "@/repositories/employee/employee-delete.repository";
 
 const employeeListQuerySchema = z.object({
   status: z
@@ -226,5 +227,17 @@ export async function updateEmployeeDetails({
     employeeInput: validationResult.data,
     actor: createActor(currentSession),
     companyAccess: currentSession.access.membership.companyAccess,
+  });
+}
+
+export async function removeEmployee({ currentSession, employeeId }) {
+  if (typeof employeeId !== "string" || !/^[^/]{1,128}$/.test(employeeId)) {
+    throw new ApplicationError({ code: "INVALID_EMPLOYEE_ID", message: "รหัสพนักงานไม่ถูกต้อง", status: 400 });
+  }
+  return softDeleteEmployee({
+    organizationId: currentSession.access.organization.id,
+    employeeId,
+    companyAccess: currentSession.access.membership.companyAccess,
+    actor: createActor(currentSession),
   });
 }

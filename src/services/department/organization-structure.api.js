@@ -52,3 +52,9 @@ export async function updateDepartmentRequest({ departmentId, input }) {
 
   return response.data?.data?.item;
 }
+
+export async function deleteDepartmentRequest(departmentId) {
+  const headers = await createStateChangingHeaders();
+  const response = await apiClient.delete(`/department/${encodeURIComponent(departmentId)}`, { headers });
+  return response.data?.data?.item;
+}

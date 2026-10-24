@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  HiOutlineBuildingOffice2,
-  HiOutlineCalendarDays,
-} from "react-icons/hi2";
+import { HiOutlineCalendarDays } from "react-icons/hi2";
 
 import {
   createCompanyWorkScheduleRequest,
@@ -131,24 +128,8 @@ export default function CompanyWorkScheduleClient({
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
-      <header className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white sm:px-8">
-        <div className="flex items-start gap-4">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
-            <HiOutlineBuildingOffice2 className="size-6" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-amber-400">
-              Company Settings
-            </p>
-            <h1 className="mt-2 text-2xl font-black sm:text-3xl">
-              วันทำงานของบริษัท
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              กำหนดวันทำงานแยกบริษัท เพื่อคำนวณวันลาให้ถูกต้อง
-            </p>
-          </div>
-        </div>
-      </header>
+      <h2 className="text-xl font-black text-slate-950 dark:text-white">วันทำงานของบริษัท</h2>
+      <p className="text-sm text-slate-500">กำหนดวันทำงานแยกบริษัท เพื่อคำนวณวันลาให้ถูกต้อง</p>
 
       {error && (
         <p

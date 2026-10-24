@@ -146,12 +146,12 @@ export default function LeaveApprovalDelegationClient({ companies, employees }) 
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8">
-      <div>
-        <p className="text-sm font-semibold text-amber-700">Manage / Access</p>
-        <h1 className="mt-1 text-3xl font-black text-slate-950">
+      <div className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">Access Management</p>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
           ผู้ทำหน้าที่ HR แทน
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-3 text-sm leading-6 text-slate-300">
           มอบหมายเฉพาะการอนุมัติลาในบริษัทและช่วงวันที่กำหนด โดยไม่เปลี่ยน role
           หลักของพนักงาน
         </p>

@@ -48,3 +48,9 @@ export async function updateEmployeeRequest({ employeeId, input }) {
 
   return response.data?.data;
 }
+
+export async function deleteEmployeeRequest(employeeId) {
+  const headers = await createStateChangingHeaders();
+  const response = await apiClient.delete(`/employee/${encodeURIComponent(employeeId)}`, { headers });
+  return response.data?.data?.employee;
+}

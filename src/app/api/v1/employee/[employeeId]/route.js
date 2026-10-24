@@ -6,7 +6,8 @@ import {
 } from "@/lib/api/api-response";
 import { requireAllPermissions } from "@/lib/auth/authorization";
 import { validateStateChangingRequest } from "@/lib/auth/request-security";
-import { updateEmployeeDetails } from "@/services/employee/employee.service";
+import { removeEmployee, updateEmployeeDetails } from "@/services/employee/employee.service";
+import { requirePermission } from "@/lib/auth/authorization";
 
 export const dynamic = "force-dynamic";
 
@@ -33,5 +34,17 @@ export async function PUT(request, context) {
     });
   } catch (error) {
     return createApiErrorResponse(error, "Employee Update API");
+  }
+}
+
+export async function DELETE(request, context) {
+  try {
+    validateStateChangingRequest(request);
+    const currentSession = await requirePermission(PERMISSIONS.EMPLOYEE_DELETE);
+    const { employeeId } = await context.params;
+    const employee = await removeEmployee({ currentSession, employeeId });
+    return createSuccessResponse({ employee });
+  } catch (error) {
+    return createApiErrorResponse(error, "Employee Delete API");
   }
 }

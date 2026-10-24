@@ -120,12 +120,12 @@ export default function EmployeeAccessRoleClient({ initialItems }) {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8">
-      <div>
-        <p className="text-sm font-semibold text-amber-700">Manage / Users</p>
-        <h1 className="mt-1 text-3xl font-black text-slate-950">
+      <div className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">Access Management</p>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
           สิทธิ์พนักงานในระบบ
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
           Role กำหนดว่าบัญชีทำงานอะไรได้
           ส่วนขอบเขตบริษัทกำหนดว่ามองเห็นข้อมูลบริษัทใด
         </p>

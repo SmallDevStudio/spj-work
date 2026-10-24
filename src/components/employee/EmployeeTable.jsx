@@ -1,6 +1,6 @@
 "use client";
 
-import { HiOutlinePencilSquare } from "react-icons/hi2";
+import { HiOutlinePencilSquare, HiOutlineTrash } from "react-icons/hi2";
 
 import { EMPLOYMENT_STATUS_LABELS } from "@/constants/employees";
 
@@ -10,7 +10,9 @@ export default function EmployeeTable({
   companies,
   showCompany,
   canEdit,
+  canDelete,
   onEdit,
+  onDelete,
 }) {
   const departmentNames = new Map(
     departments.map((item) => [item.id, item.nameTh]),
@@ -55,7 +57,7 @@ export default function EmployeeTable({
             <th scope="col" className="px-4 py-4 font-semibold">
               สถานะ
             </th>
-            {canEdit && (
+            {(canEdit || canDelete) && (
               <th scope="col" className="px-4 py-4 text-right font-semibold">
                 จัดการ
               </th>
@@ -111,8 +113,9 @@ export default function EmployeeTable({
                   "—"}
               </td>
 
-              {canEdit && (
-                <td className="px-4 py-4 text-right">
+              {(canEdit || canDelete) && (
+                <td className="whitespace-nowrap px-4 py-4 text-right">
+                  {canEdit ? (
                   <button
                     type="button"
                     onClick={() => onEdit(employee)}
@@ -125,6 +128,14 @@ export default function EmployeeTable({
                     />
                     แก้ไข
                   </button>
+                  ) : null}
+                  {canDelete ? (
+                    <button type="button" onClick={() => onDelete(employee)}
+                      className="ml-2 inline-flex min-h-10 items-center gap-2 rounded-xl border border-rose-200 px-3 font-semibold text-rose-700 hover:bg-rose-50"
+                      aria-label={`ลบ ${employee.displayName || employee.employeeCode}`}>
+                      <HiOutlineTrash className="size-4" aria-hidden="true" />ลบ
+                    </button>
+                  ) : null}
                 </td>
               )}
             </tr>

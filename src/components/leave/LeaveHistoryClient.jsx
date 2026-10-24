@@ -123,10 +123,11 @@ export default function LeaveHistoryClient({ initial, companies, canDelete }) {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
-      <h1 className="text-3xl font-black text-slate-950">ประวัติการลา</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        ดูใบลาตามสิทธิ์บริษัท รายการที่ลบยังคงอยู่ใน Audit Log
-      </p>
+      <section className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">Leave Management</p>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">ประวัติการลา</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-300">ดูใบลาตามสิทธิ์บริษัท รายการที่ลบยังคงอยู่ใน Audit Log</p>
+      </section>
 
       <div className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <input

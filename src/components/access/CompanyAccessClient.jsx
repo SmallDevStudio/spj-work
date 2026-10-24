@@ -125,14 +125,14 @@ export default function CompanyAccessClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-          Organization Settings
+      <div className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
+          Access Management
         </p>
-        <h1 className="mt-1 text-3xl font-black text-slate-950 dark:text-white">
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
           สิทธิ์การเข้าถึงบริษัท
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+        <p className="mt-3 text-sm leading-6 text-slate-300">
           บริษัทที่พนักงานสังกัดกับบริษัทที่บัญชีเข้าถึงได้เป็นคนละข้อมูล
           สิทธิ์ในหน้านี้ใช้ร่วมกับ role และ permission ของผู้ใช้
         </p>

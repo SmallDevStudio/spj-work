@@ -6,6 +6,11 @@
 
 ### Added
 
+- `/manage` ส่งต่อไป `/manage/dashboard` (หน้าเริ่มต้นสำหรับรายงาน); เมนูจัดการสิทธิ์แยกหน้าลูกและเปิด/ปิดแบบ dropdown
+- Employee, Department และ Company รองรับการลบแบบ soft delete พร้อมยืนยัน SweetAlert2 และบันทึก Audit Log; ห้ามลบเมื่อมีข้อมูลสำคัญอ้างอิง
+- Company แก้ไขชื่อ รายละเอียด ที่อยู่ เบอร์โทร อีเมล สถานะ และ URL โลโก้ได้; ตั้งวันทำงานจาก `/manage/company` โดยตรง
+- `/settings` เก็บค่าช่องทางแจ้งเตือน Email/LINE ส่วนกลางพร้อม Audit Log และแสดงสถานะ Google Workspace Directory
+
 - Portal และ URL บริการส่วนตัว `/<userId>`; งานจัดการรวมที่ `/manage` และตั้งค่าแอปที่ `/settings`
 - แบ่ง API และไฟล์ตาม Auth, Access, Company, Department, Employee, Leave และ Notifications
 - ระบบบริษัท SPJ01/SPJ02 พร้อมขอบเขตการเห็นข้อมูลของสมาชิก การกำหนดสิทธิ์พนักงาน และการมอบหมายงานอนุมัติ HR
@@ -31,6 +36,8 @@
 - แปลง Firestore Timestamp ในผลอนุมัติของ Dev Test เป็น ISO string ก่อนส่งจาก Server Component ไป Client Component เพื่อเปิดรายการจากการแจ้งเตือนได้หลังอนุมัติ
 
 ### Known limitations
+
+- ตัวเลือก Email/LINE เป็นค่าตั้งต้นสำหรับการเชื่อมต่อในอนาคต ยังไม่มีตัวส่งจริง; Google Workspace Directory ยังไม่มีการเชื่อมต่อจัดการบัญชี และช่องโลโก้รับ URL HTTPS ก่อนมีระบบอัปโหลด
 
 - วันเริ่มรอบสิทธิ์หลักยังเป็น 1 มกราคม; ยังไม่มีหน้าตั้งค่าวัน reset และงานยกยอดอัตโนมัติครบวงจร
 - Dev Test จำลองกฎและบันทึกการแจ้งเตือนจริงของบัญชีทดสอบ แต่ไม่ได้สร้างใบลาพนักงานจริง การทดสอบกับ Firebase Auth/Firestore จริงยังต้องทำตามคู่มือ

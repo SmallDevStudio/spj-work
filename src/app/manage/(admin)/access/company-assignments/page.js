@@ -14,17 +14,17 @@ export default async function CompanyAccessPage() {
   const session = await requireCurrentSession();
 
   if (session.access.membership.role !== ROLES.SUPERADMIN) {
-    redirect("/settings");
+    redirect("/manage/access");
   }
 
   return (
     <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
       <Link
-        href="/settings"
+        href="/manage/access"
         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
       >
         <HiArrowLeft className="size-4" aria-hidden="true" />
-        กลับไปตั้งค่าระบบ
+        กลับไปจัดการสิทธิ์
       </Link>
 
       <div className="mt-7">

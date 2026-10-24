@@ -125,19 +125,19 @@ export default function LeaveHrTakeoverClient({ companies, employees }) {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8">
-      <div>
+      <div className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
         <Link
           href="/manage/leave"
-          className="text-sm font-semibold text-sky-700 hover:underline"
+          className="text-sm font-semibold text-amber-400 hover:underline"
         >
           ← กลับไปจัดการการลา
         </Link>
 
-        <h1 className="mt-5 text-3xl font-black text-slate-950">
+        <h1 className="mt-5 text-2xl font-black tracking-tight sm:text-3xl">
           โอนงาน HR ค้าง
         </h1>
 
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-3 text-sm leading-6 text-slate-300">
           ใช้เมื่อ HR คนเดิมลาออกหรือไม่สามารถรับงานได้
           การโอนจะเปลี่ยนเฉพาะผู้รับงานฝั่ง HR
         </p>

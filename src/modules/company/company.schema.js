@@ -45,6 +45,22 @@ const descriptionSchema = z.preprocess(
     .nullable(),
 );
 
+const optionalText = (max) => z.preprocess(
+  (value) => value === "" || value == null ? null : value,
+  z.string().trim().max(max).nullable(),
+);
+
+const emailSchema = z.preprocess(
+  (value) => value === "" || value == null ? null : value,
+  z.string().trim().email("อีเมลบริษัทไม่ถูกต้อง").max(254).nullable(),
+);
+
+const logoUrlSchema = z.preprocess(
+  (value) => value === "" || value == null ? null : value,
+  z.string().trim().url("URL โลโก้ไม่ถูกต้อง").max(1000)
+    .refine((value) => /^https:\/\//i.test(value), "โลโก้ต้องใช้ HTTPS").nullable(),
+);
+
 const companyIdSchema = z
   .string()
   .trim()
@@ -56,6 +72,10 @@ export const companyCreateSchema = z
     code: companyCodeSchema,
     nameTh: companyNameSchema,
     description: descriptionSchema.default(null),
+    address: optionalText(1000).default(null),
+    phoneNumber: optionalText(50).default(null),
+    email: emailSchema.default(null),
+    logoUrl: logoUrlSchema.default(null),
     status: z.enum(ALL_COMPANY_STATUSES).default(COMPANY_STATUS.ACTIVE),
   })
   .strict();
@@ -64,6 +84,10 @@ export const companyUpdateSchema = z
   .object({
     nameTh: companyNameSchema.optional(),
     description: descriptionSchema.optional(),
+    address: optionalText(1000).optional(),
+    phoneNumber: optionalText(50).optional(),
+    email: emailSchema.optional(),
+    logoUrl: logoUrlSchema.optional(),
     status: z.enum(ALL_COMPANY_STATUSES).optional(),
   })
   .strict()

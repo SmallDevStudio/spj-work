@@ -5,6 +5,7 @@ import { PERMISSIONS } from "@/constants/permissions";
 import { ROLES } from "@/constants/roles";
 import { serverEnv } from "@/config/env.server";
 import { requireAnyPermission } from "@/lib/auth/authorization";
+import ManagePageHero from "@/components/layout/ManagePageHero";
 
 export const metadata = {
   title: "จัดการการลา | SPJ Work",
@@ -73,13 +74,7 @@ export default async function ManageLeavePage() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-      <p className="text-sm font-semibold text-amber-700">Manage / Leave</p>
-
-      <h1 className="mt-1 text-3xl font-black text-slate-950">จัดการการลา</h1>
-
-      <p className="mt-2 text-sm text-slate-600">
-        ตั้งค่าประเภทการลา สิทธิ์วันลา ปฏิทิน และงานอนุมัติค้าง
-      </p>
+      <ManagePageHero eyebrow="Leave Management" title="จัดการการลา" description="ตั้งค่าประเภทการลา สิทธิ์วันลา ปฏิทิน และงานอนุมัติค้าง" />
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {visibleSections.map((item) => (

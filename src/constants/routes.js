@@ -12,7 +12,7 @@ export const ROUTES = Object.freeze({
   SERVICES: "/services",
   INBOX: "/inbox",
 
-  MANAGE_HR: "/manage",
+  MANAGE_HR: "/manage/dashboard",
   MANAGE_HR_EMPLOYEES: "/manage/employee",
   MANAGE_HR_DEPARTMENTS: "/manage/department",
   MANAGE_HR_LEAVE: "/manage/leave",

@@ -92,6 +92,11 @@ const pageTitles = [
     eyebrow: "SPJ Work",
     title: "หน้าจัดการ",
   },
+  {
+    path: "/manage/dashboard",
+    eyebrow: "SPJ Work",
+    title: "Dashboard",
+  },
 ];
 
 function getPageTitle(pathname) {

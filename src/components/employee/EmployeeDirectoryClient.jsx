@@ -25,6 +25,7 @@ import {
 
 import {
   createEmployeeRequest,
+  deleteEmployeeRequest,
   getEmployeeApiErrorMessage,
   updateEmployeeRequest,
 } from "@/services/employee/employee.api";
@@ -247,6 +248,7 @@ export default function EmployeeDirectoryClient({
   showCompany,
   canCreate,
   canEdit,
+  canDelete,
   canManageDepartments,
 }) {
   const router = useRouter();
@@ -529,6 +531,29 @@ export default function EmployeeDirectoryClient({
     }
   }
 
+  async function handleDelete(employee) {
+    const Swal = (await import("sweetalert2")).default;
+    const result = await Swal.fire({
+      title: "ลบข้อมูลพนักงาน?",
+      text: `คุณกำลังลบ ${employee.displayName || employee.employeeCode} การลบจะเก็บประวัติไว้ใน Audit Log`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "ยืนยันการลบ",
+      cancelButtonText: "ยกเลิก",
+      confirmButtonColor: "#be123c",
+    });
+    if (!result.isConfirmed) return;
+    setFormError("");
+    setSuccessMessage("");
+    try {
+      await deleteEmployeeRequest(employee.id);
+      setSuccessMessage(`ลบข้อมูล ${employee.displayName || employee.employeeCode} แล้ว`);
+      router.refresh();
+    } catch (error) {
+      await Swal.fire({ icon: "error", title: "ลบไม่สำเร็จ", text: getEmployeeApiErrorMessage(error) });
+    }
+  }
+
   return (
     <>
       <main className="mx-auto w-full max-w-7xl">
@@ -634,7 +659,9 @@ export default function EmployeeDirectoryClient({
             companies={companies}
             showCompany={showCompany}
             canEdit={canEdit}
+            canDelete={canDelete}
             onEdit={openEditDialog}
+            onDelete={handleDelete}
           />
         </section>
       </main>

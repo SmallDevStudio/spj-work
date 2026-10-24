@@ -70,6 +70,10 @@ export async function createCompany({ organizationId, data, actor }) {
       code,
       nameTh: data.nameTh,
       description: data.description,
+      address: data.address,
+      phoneNumber: data.phoneNumber,
+      email: data.email,
+      logoUrl: data.logoUrl,
       status: data.status,
       isDeleted: false,
       createdAt: FieldValue.serverTimestamp(),
@@ -103,6 +107,10 @@ export async function createCompany({ organizationId, data, actor }) {
         code,
         nameTh: data.nameTh,
         description: data.description,
+        address: data.address,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        logoUrl: data.logoUrl,
         status: data.status,
       },
       metadata: null,
@@ -114,4 +122,56 @@ export async function createCompany({ organizationId, data, actor }) {
     organizationId,
     companyId: companyRef.id,
   });
+}
+
+export async function updateCompany({ organizationId, companyId, data, actor }) {
+  const root = getOrganizationRef(organizationId);
+  const ref = root.collection("companies").doc(companyId);
+  await adminFirestore.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const before = snapshot.data();
+    if (!snapshot.exists || before?.isDeleted === true) throw new ApplicationError({
+      code: "COMPANY_NOT_FOUND", message: "ไม่พบบริษัท", status: 404,
+    });
+    transaction.update(ref, {
+      ...data, updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.uid,
+    });
+    transaction.set(root.collection("auditLogs").doc(), {
+      organizationId, actor, action: "COMPANY_UPDATE", entityType: "COMPANY",
+      entityId: companyId, source: "WEB", summary: `Updated company ${before.code}.`,
+      before: Object.fromEntries(Object.keys(data).map((key) => [key, before[key] ?? null])),
+      after: data, metadata: null, createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return getCompanyById({ organizationId, companyId });
+}
+
+export async function softDeleteCompany({ organizationId, companyId, actor }) {
+  const root = getOrganizationRef(organizationId);
+  const ref = root.collection("companies").doc(companyId);
+  await adminFirestore.runTransaction(async (transaction) => {
+    const [snapshot, employees, requests] = await Promise.all([
+      transaction.get(ref),
+      transaction.get(root.collection("employees").where("companyId", "==", companyId).limit(1)),
+      transaction.get(root.collection("leaveRequests").where("companyId", "==", companyId).limit(1)),
+    ]);
+    const company = snapshot.data();
+    if (!snapshot.exists || company?.isDeleted === true) throw new ApplicationError({
+      code: "COMPANY_NOT_FOUND", message: "ไม่พบบริษัท", status: 404,
+    });
+    if (!employees.empty || !requests.empty) throw new ApplicationError({
+      code: "COMPANY_HAS_REFERENCES", message: "บริษัทนี้มีข้อมูลพนักงานหรือใบลาอ้างอิงอยู่ ไม่สามารถลบได้", status: 409,
+    });
+    transaction.update(ref, {
+      isDeleted: true, deletedAt: FieldValue.serverTimestamp(), deletedBy: actor.uid,
+      updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.uid,
+    });
+    transaction.set(root.collection("auditLogs").doc(), {
+      organizationId, actor, action: "COMPANY_DELETE", entityType: "COMPANY",
+      entityId: companyId, source: "WEB", summary: `Soft-deleted company ${company.code}.`,
+      before: { code: company.code, nameTh: company.nameTh, isDeleted: false },
+      after: { isDeleted: true }, metadata: null, createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return { id: companyId, isDeleted: true };
 }

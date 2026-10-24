@@ -10,11 +10,14 @@ import {
 import { ApplicationError } from "@/lib/errors/application-error";
 import {
   companyCreateSchema,
+  companyUpdateSchema,
   formatCompanyValidationErrors,
 } from "@/modules/company/company.schema";
 import {
   createCompany,
   listCompanies,
+  updateCompany,
+  softDeleteCompany,
 } from "@/repositories/company/company.repository";
 
 const companyListQuerySchema = z.object({
@@ -37,14 +40,46 @@ function createActor(currentSession) {
   };
 }
 
+function requireCompanyId(companyId) {
+  if (typeof companyId !== "string" || !/^[^/]{1,128}$/.test(companyId)) {
+    throw new ApplicationError({ code: "INVALID_COMPANY_ID", message: "รหัสอ้างอิงบริษัทไม่ถูกต้อง", status: 400 });
+  }
+  return companyId;
+}
+
 export function serializeCompany(company) {
   return {
     id: company.id,
     code: company.code,
     nameTh: company.nameTh,
     description: company.description ?? null,
+    address: company.address ?? null,
+    phoneNumber: company.phoneNumber ?? null,
+    email: company.email ?? null,
+    logoUrl: company.logoUrl ?? null,
     status: company.status,
   };
+}
+
+export async function editCompany({ currentSession, companyId, input }) {
+  requireCompanyId(companyId);
+  const result = companyUpdateSchema.safeParse(input);
+  if (!result.success) throw new ApplicationError({
+    code: "VALIDATION_ERROR", message: "ข้อมูลบริษัทไม่ถูกต้อง", status: 400,
+    details: formatCompanyValidationErrors(result.error),
+  });
+  return serializeCompany(await updateCompany({
+    organizationId: currentSession.access.organization.id,
+    companyId, data: result.data, actor: createActor(currentSession),
+  }));
+}
+
+export async function removeCompany({ currentSession, companyId }) {
+  requireCompanyId(companyId);
+  return softDeleteCompany({
+    organizationId: currentSession.access.organization.id,
+    companyId, actor: createActor(currentSession),
+  });
 }
 
 export async function getCompanyList({ currentSession, query }) {

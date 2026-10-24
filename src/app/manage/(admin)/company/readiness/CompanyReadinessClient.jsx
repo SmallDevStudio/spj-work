@@ -37,14 +37,14 @@ export default function CompanyReadinessClient() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-          Data readiness
+      <div className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
+          Company Management
         </p>
-        <h1 className="mt-1 text-3xl font-black text-slate-950 dark:text-white">
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
           ตรวจข้อมูลรายบริษัท
         </h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mt-3 text-sm leading-6 text-slate-300">
           ตรวจข้อมูลก่อนเปิดการจำกัดสิทธิ์การอ่านข้อมูลรายบริษัท
         </p>
       </div>

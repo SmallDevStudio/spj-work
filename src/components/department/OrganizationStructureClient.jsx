@@ -8,6 +8,7 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineXMark,
   HiOutlinePencilSquare,
+  HiOutlineTrash,
 } from "react-icons/hi2";
 
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/constants/organization-structure";
 import {
   createDepartmentRequest,
+  deleteDepartmentRequest,
   getApiErrorMessage,
   updateDepartmentRequest,
 } from "@/services/department/organization-structure.api";
@@ -205,6 +207,23 @@ export default function OrganizationStructureClient({
     }
   }
 
+  async function handleDelete(department) {
+    const Swal = (await import("sweetalert2")).default;
+    const result = await Swal.fire({
+      title: "ลบแผนก?",
+      text: `ต้องย้ายพนักงานออกจาก ${department.nameTh} ก่อนลบ ระบบจะเก็บประวัติใน Audit Log`,
+      icon: "warning", showCancelButton: true,
+      confirmButtonText: "ยืนยันการลบ", cancelButtonText: "ยกเลิก", confirmButtonColor: "#be123c",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await deleteDepartmentRequest(department.id);
+      router.refresh();
+    } catch (error) {
+      await Swal.fire({ icon: "error", title: "ลบไม่สำเร็จ", text: getApiErrorMessage(error) });
+    }
+  }
+
   return (
     <>
       <main className="mx-auto w-full max-w-7xl">
@@ -282,6 +301,9 @@ export default function OrganizationStructureClient({
                         <td className="px-4 py-4 text-right">
                           <button type="button" onClick={() => openEditDialog(department)} aria-label={`แก้ไข ${department.nameTh}`} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 font-semibold hover:bg-amber-50 dark:border-slate-700 dark:hover:bg-slate-800">
                             <HiOutlinePencilSquare className="size-4" aria-hidden="true" />แก้ไข
+                          </button>
+                          <button type="button" onClick={() => handleDelete(department)} aria-label={`ลบ ${department.nameTh}`} className="ml-2 inline-flex min-h-10 items-center gap-2 rounded-xl border border-rose-200 px-3 font-semibold text-rose-700 hover:bg-rose-50">
+                            <HiOutlineTrash className="size-4" aria-hidden="true" />ลบ
                           </button>
                         </td>
                       ) : null}

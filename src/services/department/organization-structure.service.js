@@ -13,6 +13,7 @@ import {
   listDepartments,
   updateDepartment,
 } from "@/repositories/department/organization-structure.repository";
+import { softDeleteDepartment } from "@/repositories/department/department-delete.repository";
 
 function normalizeSearchValue(value) {
   return value?.trim().toLocaleLowerCase("th") ?? "";
@@ -145,6 +146,17 @@ export async function editDepartment({ currentSession, departmentId, input }) {
     organizationId: currentSession.access.organization.id,
     departmentId: departmentId.trim(),
     data: validationResult.data,
+    actor: createActor(currentSession),
+  });
+}
+
+export async function removeDepartment({ currentSession, departmentId }) {
+  if (typeof departmentId !== "string" || !/^[^/]{1,128}$/.test(departmentId)) {
+    throw new ApplicationError({ code: "INVALID_DEPARTMENT_ID", message: "รหัสแผนกไม่ถูกต้อง", status: 400 });
+  }
+  return softDeleteDepartment({
+    organizationId: currentSession.access.organization.id,
+    departmentId,
     actor: createActor(currentSession),
   });
 }

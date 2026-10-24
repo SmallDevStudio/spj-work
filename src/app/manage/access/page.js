@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { PERMISSIONS } from "@/constants/permissions";
 import { requireAnyPermission } from "@/lib/auth/authorization";
+import ManagePageHero from "@/components/layout/ManagePageHero";
 
 export const metadata = { title: "จัดการสิทธิ์ | SPJ Work" };
 
@@ -42,13 +43,7 @@ export default async function ManageAccessPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-      <p className="text-sm font-semibold text-amber-700">Manage / Access</p>
-      <h1 className="mt-1 text-3xl font-black text-slate-950">
-        จัดการสิทธิ์
-      </h1>
-      <p className="mt-2 text-sm text-slate-600">
-        บทบาทหลัก สิทธิ์รายบริษัท และการมอบหน้าที่แทน
-      </p>
+      <ManagePageHero eyebrow="Access Management" title="จัดการสิทธิ์" description="บทบาทหลัก สิทธิ์รายบริษัท และการมอบหน้าที่แทน" />
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((section) => (

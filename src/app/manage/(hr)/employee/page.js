@@ -118,6 +118,7 @@ export default async function EmployeesPage() {
   );
 
   const canCreate = permissions.includes(PERMISSIONS.EMPLOYEE_CREATE);
+  const canDelete = permissions.includes(PERMISSIONS.EMPLOYEE_DELETE);
 
   const canEdit =
     permissions.includes(PERMISSIONS.EMPLOYEE_UPDATE) &&
@@ -142,6 +143,7 @@ export default async function EmployeesPage() {
       departments={departments.map(serializeDepartment)}
       canCreate={canCreate}
       canEdit={canEdit}
+      canDelete={canDelete}
       canManageDepartments={canManageDepartments}
       companies={visibleCompanies}
       showCompany={showCompany}
