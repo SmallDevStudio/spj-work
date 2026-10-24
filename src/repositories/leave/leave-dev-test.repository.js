@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
+import { serializeDevTestApproval } from "@/modules/leave/leave-dev-test-presentation";
 import {
   decideDevLeaveScenario,
   devLeaveBalance,
@@ -31,7 +32,7 @@ function publicRun(id, data) {
     excessDays: data.excessDays,
     status: data.status,
     isDeleted: data.isDeleted === true,
-    approval: data.approval,
+    approval: serializeDevTestApproval(data.approval),
     balance: devLeaveBalance(data),
   };
 }
