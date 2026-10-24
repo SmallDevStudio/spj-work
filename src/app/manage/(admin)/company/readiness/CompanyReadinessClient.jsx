@@ -139,7 +139,7 @@ export default function CompanyReadinessClient() {
                 ))}
               </ul>
               <Link
-                href="/manage/users/company-access"
+                href="/manage/access/company-assignments"
                 className="mt-4 inline-block font-semibold text-sky-700 dark:text-sky-300"
               >
                 ไปตั้งค่าสิทธิ์รายบริษัท

@@ -7,7 +7,6 @@ import {
   HiOutlineBell,
   HiOutlineCalendarDays,
   HiOutlineChevronDown,
-  HiOutlineEnvelope,
   HiOutlineHome,
   HiOutlineMagnifyingGlass,
   HiOutlineSquares2X2,
@@ -58,10 +57,10 @@ export default function PortalShell({ children, session }) {
       active: false,
     },
     {
-      label: "Inbox",
-      icon: HiOutlineEnvelope,
-      href: null,
-      active: false,
+      label: "แจ้งเตือน",
+      icon: HiOutlineBell,
+      href: userRoutes?.NOTIFICATIONS ?? null,
+      active: pathname === userRoutes?.NOTIFICATIONS,
     },
     {
       label: "โปรไฟล์",
@@ -182,13 +181,15 @@ export default function PortalShell({ children, session }) {
               </Link>
             ) : null}
 
-            <span
-              title="การแจ้งเตือนกำลังเตรียม"
-              className="flex size-10 items-center justify-center text-slate-700 dark:text-slate-200 max-lg:text-white"
-            >
-              <HiOutlineBell className="size-6" aria-hidden="true" />
-              <span className="sr-only">การแจ้งเตือนกำลังเตรียม</span>
-            </span>
+            {userRoutes ? (
+              <Link
+                href={userRoutes.NOTIFICATIONS}
+                aria-label="การแจ้งเตือน"
+                className="flex size-10 items-center justify-center text-slate-700 dark:text-slate-200 max-lg:text-white"
+              >
+                <HiOutlineBell className="size-6" aria-hidden="true" />
+              </Link>
+            ) : null}
 
             <div className="hidden h-7 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
 

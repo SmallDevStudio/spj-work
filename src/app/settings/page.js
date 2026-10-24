@@ -29,7 +29,7 @@ const settingGroups = [
     description: "จัดการบัญชีผู้ใช้ บทบาท กลุ่มสิทธิ์ และสถานะการเข้าถึงระบบ",
     icon: HiOutlineUserGroup,
     color: "violet",
-    href: "/manage/users/company-access",
+    href: "/manage/access/company-assignments",
   },
   {
     name: "Google Workspace",

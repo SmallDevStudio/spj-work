@@ -34,12 +34,6 @@ const sections = [
     permission: PERMISSIONS.HOLIDAY_MANAGE,
   },
   {
-    title: "ผู้ทำหน้าที่ HR แทน",
-    description: "มอบสิทธิ์อนุมัติลาเฉพาะบริษัทและช่วงวันที่",
-    href: "/manage/leave/delegations",
-    permission: PERMISSIONS.LEAVE_WORKFLOW_MANAGE,
-  },
-  {
     title: "โอนงาน HR ค้าง",
     description: "เลือกใบลาหลายใบและย้ายผู้รับงาน",
     href: "/manage/leave/takeover",
@@ -70,7 +64,7 @@ export default async function ManageLeavePage() {
       <h1 className="mt-1 text-3xl font-black text-slate-950">จัดการการลา</h1>
 
       <p className="mt-2 text-sm text-slate-600">
-        ตั้งค่าสิทธิ์ ปฏิทิน ผู้ทำหน้าที่แทน และงานอนุมัติค้าง
+        ตั้งค่าประเภทการลา สิทธิ์วันลา ปฏิทิน และงานอนุมัติค้าง
       </p>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

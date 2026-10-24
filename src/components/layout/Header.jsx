@@ -23,9 +23,19 @@ const pageTitles = [
     title: "ตรวจความพร้อมข้อมูลบริษัท",
   },
   {
-    path: "/manage/users/company-access",
+    path: "/manage/access/company-assignments",
     eyebrow: "User Management",
     title: "สิทธิ์เข้าถึงบริษัท",
+  },
+  {
+    path: "/manage/access/employee-roles",
+    eyebrow: "Access Management",
+    title: "Role พนักงาน",
+  },
+  {
+    path: "/manage/access/delegations/leave-approval",
+    eyebrow: "Access Management",
+    title: "มอบสิทธิ์อนุมัติลา",
   },
   {
     path: "/manage/leave/assignments",
@@ -63,9 +73,9 @@ const pageTitles = [
     title: "ข้อมูลบริษัท",
   },
   {
-    path: "/manage/users",
-    eyebrow: "User Management",
-    title: "จัดการผู้ใช้",
+    path: "/manage/access",
+    eyebrow: "Access Management",
+    title: "จัดการสิทธิ์",
   },
   {
     path: "/manage/leave",

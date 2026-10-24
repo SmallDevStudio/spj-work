@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth/company-access";
 import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
-import { listActiveLeaveHrDelegationsForCompany } from "@/repositories/leave/leave-hr-delegation.repository";
+import { listActiveLeaveHrDelegationsForCompany } from "@/repositories/access/leave-approval-delegation.repository";
 
 const HR_ROLES = new Set([ROLES.HR_ADMIN, ROLES.HR_OFFICER]);
 

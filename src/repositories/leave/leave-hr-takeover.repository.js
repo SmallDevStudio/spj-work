@@ -10,7 +10,7 @@ import {
 } from "@/lib/auth/company-access";
 import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
-import { listActiveLeaveHrDelegations } from "@/repositories/leave/leave-hr-delegation.repository";
+import { listActiveLeaveHrDelegations } from "@/repositories/access/leave-approval-delegation.repository";
 
 const MAX_TRANSFER = 50;
 

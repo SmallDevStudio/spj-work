@@ -1,5 +1,6 @@
-import LeaveNotificationsClient from "@/components/leave/LeaveNotificationsClient";
-import { requireCurrentSession } from "@/lib/auth/authorization";
+import NotificationsClient from "@/components/notifications/NotificationsClient";
+import { PERMISSIONS } from "@/constants/permissions";
+import { requirePermission } from "@/lib/auth/authorization";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -10,11 +11,11 @@ export const metadata = {
 
 export default async function NotificationsPage({ params }) {
   const { userId } = await params;
-  const session = await requireCurrentSession();
+  const session = await requirePermission(PERMISSIONS.NOTIFICATION_READ);
 
   if (session.identity.uid !== userId) {
     notFound();
   }
 
-  return <LeaveNotificationsClient userId={userId} />;
+  return <NotificationsClient userId={userId} />;
 }

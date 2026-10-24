@@ -11,7 +11,7 @@ import {
   canAccessCompany,
   resolveCompanyAccess,
 } from "@/lib/auth/company-access";
-import { listActiveLeaveHrDelegations } from "@/repositories/leave/leave-hr-delegation.repository";
+import { listActiveLeaveHrDelegations } from "@/repositories/access/leave-approval-delegation.repository";
 
 function fail(code, message, status) {
   throw new ApplicationError({ code, message, status });

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:boundaries": "node scripts/check-module-boundaries.mjs",
     "start": "next start",
     "lint": "eslint"
   },

@@ -46,10 +46,14 @@ export const WORKSPACE_SETTINGS = Object.freeze({
         enabled: true,
       },
       {
-        name: "สิทธิ์เข้าถึงบริษัท",
-        href: "/manage/users/company-access",
+        name: "จัดการสิทธิ์",
+        href: "/manage/access",
         icon: HiOutlineShieldCheck,
-        permissions: [PERMISSIONS.ORGANIZATION_MANAGE],
+        permissions: [
+          PERMISSIONS.ORGANIZATION_MANAGE,
+          PERMISSIONS.ROLE_MANAGE,
+          PERMISSIONS.LEAVE_WORKFLOW_MANAGE,
+        ],
         enabled: true,
       },
       {

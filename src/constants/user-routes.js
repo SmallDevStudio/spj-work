@@ -16,5 +16,6 @@ export function getUserRoutes(userId) {
     LEAVE_NEW: `${base}/leave/new`,
     CALENDAR: `${base}/calendar`,
     ASSETS: `${base}/assets`,
+    NOTIFICATIONS: `${base}/notifications`,
   });
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HiArrowLeft } from "react-icons/hi2";
 
-import EmployeeCompanyMigrationClient from "@/components/settings/EmployeeCompanyMigrationClient";
+import EmployeeCompanyMigrationClient from "@/components/company/EmployeeCompanyMigrationClient";
 import { ROLES } from "@/constants/roles";
 import { requireCurrentSession } from "@/lib/auth/authorization";
 

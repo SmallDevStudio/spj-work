@@ -8,7 +8,7 @@ import {
   getPlatformUser,
 } from "@/repositories/auth/access.repository";
 import { resolveCompanyAccess } from "@/lib/auth/company-access";
-import { listActiveLeaveHrDelegations } from "@/repositories/leave/leave-hr-delegation.repository";
+import { listActiveLeaveHrDelegations } from "@/repositories/access/leave-approval-delegation.repository";
 
 const ACTIVE_STATUS = "ACTIVE";
 const PASSWORD_PROVIDER_ID = "password";

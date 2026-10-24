@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { HiArrowLeft } from "react-icons/hi2";
 
-import CompanyDirectoryClient from "@/components/settings/CompanyDirectoryClient";
+import CompanyDirectoryClient from "@/components/company/CompanyDirectoryClient";
 
 export const metadata = {
   title: "บริษัท | SPJ Work",

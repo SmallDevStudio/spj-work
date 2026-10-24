@@ -43,7 +43,7 @@ export default function LeaveHrTakeoverClient({ companies, employees }) {
     setSelectedIds([]);
 
     try {
-      const response = await apiClient.get("/leave/hr-takeover", {
+      const response = await apiClient.get("/leave/approver-transfers", {
         params: {
           companyId,
           oldEmployeeId,
@@ -85,7 +85,7 @@ export default function LeaveHrTakeoverClient({ companies, employees }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/leave/hr-takeover",
+        "/leave/approver-transfers",
         {
           companyId,
           oldEmployeeId,
@@ -104,7 +104,7 @@ export default function LeaveHrTakeoverClient({ companies, employees }) {
 
       setSuccess(`โอนงาน HR สำเร็จ ${transferred} ใบ`);
 
-      const nextResponse = await apiClient.get("/leave/hr-takeover", {
+      const nextResponse = await apiClient.get("/leave/approver-transfers", {
         params: { companyId, oldEmployeeId },
       });
 
