@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
   HiOutlinePlus,
-  HiOutlineUser,
+  HiOutlineMagnifyingGlass,
   HiOutlineXMark,
   HiOutlinePencilSquare,
 } from "react-icons/hi2";
@@ -19,6 +19,7 @@ import {
   getApiErrorMessage,
   updateDepartmentRequest,
 } from "@/services/department/organization-structure.api";
+import ManagePageHero from "@/components/layout/ManagePageHero";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -105,6 +106,8 @@ export default function OrganizationStructureClient({
   const [departmentForm, setDepartmentForm] = useState(initialDepartmentForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   const employeeMap = useMemo(
     () =>
@@ -116,6 +119,18 @@ export default function OrganizationStructureClient({
       ),
     [employees],
   );
+
+  const filteredDepartments = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("th");
+    return departments.filter((department) => {
+      if (statusFilter !== "ALL" && department.status !== statusFilter) return false;
+      if (!term) return true;
+      const manager = employeeMap.get(department.managerEmployeeId) ?? "";
+      return [department.nameTh, department.description, manager].some((value) =>
+        String(value ?? "").toLocaleLowerCase("th").includes(term),
+      );
+    });
+  }, [departments, employeeMap, search, statusFilter]);
 
   function openDialog() {
     setEditingDepartmentId(null);
@@ -193,23 +208,11 @@ export default function OrganizationStructureClient({
   return (
     <>
       <main className="mx-auto w-full max-w-7xl">
-        <section className="flex flex-col gap-5 rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
-              Organization Structure
-            </p>
-
-            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              ข้อมูลแผนก
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              จัดการแผนกและหัวหน้าแผนก
-              ซึ่งระบบจะนำไปใช้เป็นหัวหน้างานเริ่มต้นของพนักงาน
-            </p>
-          </div>
-
-          {canManage ? (
+        <ManagePageHero
+          eyebrow="Organization Structure"
+          title="ข้อมูลแผนก"
+          description="จัดการแผนกและหัวหน้าแผนก ซึ่งระบบจะนำไปใช้เป็นหัวหน้างานเริ่มต้นของพนักงาน"
+          action={canManage ? (
             <button
               type="button"
               onClick={openDialog}
@@ -219,105 +222,73 @@ export default function OrganizationStructureClient({
               เพิ่มแผนก
             </button>
           ) : null}
-        </section>
+        />
 
-        <section className="mt-8">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                Department
-              </p>
-
-              <h2 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
-                แผนกทั้งหมด
-              </h2>
-            </div>
-
-            <span className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
-              {departments.length} แผนก
-            </span>
+        <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+            <label className="relative block">
+              <span className="sr-only">ค้นหาแผนก</span>
+              <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="ค้นหาชื่อ รายละเอียด หรือหัวหน้าแผนก"
+                className="min-h-12 w-full rounded-xl border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-300/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              aria-label="กรองตามสถานะแผนก"
+              className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            >
+              <option value="ALL">ทุกสถานะ</option>
+              {Object.values(MASTER_DATA_STATUS).map((status) => (
+                <option key={status} value={status}>{MASTER_DATA_STATUS_LABELS[status]?.th ?? status}</option>
+              ))}
+            </select>
           </div>
 
-          {departments.length === 0 ? (
-            <div className="mt-5 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <HiOutlineBuildingOffice2
-                  className="size-7"
-                  aria-hidden="true"
-                />
-              </div>
+          <div className="mt-5 flex items-center justify-between gap-4">
+            <h2 className="font-bold text-slate-950 dark:text-white">รายชื่อแผนก</h2>
+            <span className="text-sm text-slate-500 dark:text-slate-400">{filteredDepartments.length} รายการ</span>
+          </div>
 
-              <h3 className="mt-4 font-bold text-slate-950 dark:text-white">
-                ยังไม่มีข้อมูลแผนก
-              </h3>
-
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                เริ่มต้นด้วยการเพิ่มแผนกแรกของบริษัท
-              </p>
+          {filteredDepartments.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-6 py-14 text-center text-sm text-slate-500 dark:border-slate-700">
+              {departments.length === 0 ? "ยังไม่มีข้อมูลแผนก" : "ไม่พบแผนกที่ตรงกับการค้นหา"}
             </div>
           ) : (
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {departments.map((department) => (
-                <article
-                  key={department.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
-                      <HiOutlineBuildingOffice2
-                        className="size-5"
-                        aria-hidden="true"
-                      />
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <StatusBadge status={department.status} />
-
+            <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+              <table className="w-full min-w-[700px] text-left text-sm">
+                <thead className="bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                  <tr>
+                    <th scope="col" className="px-4 py-4 font-semibold">แผนก</th>
+                    <th scope="col" className="px-4 py-4 font-semibold">รายละเอียด</th>
+                    <th scope="col" className="px-4 py-4 font-semibold">หัวหน้าแผนก</th>
+                    <th scope="col" className="px-4 py-4 font-semibold">สถานะ</th>
+                    {canManage ? <th scope="col" className="px-4 py-4 text-right font-semibold">จัดการ</th> : null}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredDepartments.map((department) => (
+                    <tr key={department.id} className="text-slate-700 hover:bg-slate-50/70 dark:text-slate-200 dark:hover:bg-slate-800/50">
+                      <td className="px-4 py-4 font-semibold text-slate-950 dark:text-white">{department.nameTh}</td>
+                      <td className="max-w-xs px-4 py-4 text-slate-600 dark:text-slate-300">{department.description || "—"}</td>
+                      <td className="px-4 py-4">{department.managerEmployeeId ? employeeMap.get(department.managerEmployeeId) || "ไม่พบข้อมูลพนักงาน" : "ยังไม่กำหนด"}</td>
+                      <td className="px-4 py-4"><StatusBadge status={department.status} /></td>
                       {canManage ? (
-                        <button
-                          type="button"
-                          onClick={() => openEditDialog(department)}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
-                        >
-                          <HiOutlinePencilSquare
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                          แก้ไข
-                        </button>
+                        <td className="px-4 py-4 text-right">
+                          <button type="button" onClick={() => openEditDialog(department)} aria-label={`แก้ไข ${department.nameTh}`} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 font-semibold hover:bg-amber-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                            <HiOutlinePencilSquare className="size-4" aria-hidden="true" />แก้ไข
+                          </button>
+                        </td>
                       ) : null}
-                    </div>
-                  </div>
-
-                  <h3 className="mt-5 text-lg font-bold text-slate-950 dark:text-white">
-                    {department.nameTh}
-                  </h3>
-
-                  <p className="mt-3 min-h-12 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {department.description || "ยังไม่มีรายละเอียดแผนก"}
-                  </p>
-
-                  <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      หัวหน้าแผนก
-                    </p>
-
-                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      <HiOutlineUser
-                        className="size-4 shrink-0"
-                        aria-hidden="true"
-                      />
-
-                      <span className="truncate">
-                        {department.managerEmployeeId
-                          ? employeeMap.get(department.managerEmployeeId) ||
-                            "ไม่พบข้อมูลพนักงาน"
-                          : "ยังไม่กำหนด"}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>

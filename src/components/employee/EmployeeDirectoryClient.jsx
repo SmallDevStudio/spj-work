@@ -35,6 +35,7 @@ import {
 } from "@/services/department/organization-structure.api";
 
 import EmployeeTable from "@/components/employee/EmployeeTable";
+import ManagePageHero from "@/components/layout/ManagePageHero";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -531,23 +532,11 @@ export default function EmployeeDirectoryClient({
   return (
     <>
       <main className="mx-auto w-full max-w-7xl">
-        <section className="flex flex-col gap-5 rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
-              Employee Directory
-            </p>
-
-            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-              ข้อมูลพนักงาน
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              จัดการข้อมูลพนักงาน แผนก สิทธิ์เข้าใช้งาน
-              และโครงสร้างผู้บังคับบัญชาภายในบริษัท
-            </p>
-          </div>
-
-          {canCreate ? (
+        <ManagePageHero
+          eyebrow="Employee Directory"
+          title="ข้อมูลพนักงาน"
+          description="จัดการข้อมูลพนักงาน แผนก สิทธิ์เข้าใช้งาน และโครงสร้างผู้บังคับบัญชาภายในบริษัท"
+          action={canCreate ? (
             <button
               type="button"
               onClick={openDialog}
@@ -557,7 +546,7 @@ export default function EmployeeDirectoryClient({
               เพิ่มพนักงาน
             </button>
           ) : null}
-        </section>
+        />
 
         {successMessage ? (
           <div

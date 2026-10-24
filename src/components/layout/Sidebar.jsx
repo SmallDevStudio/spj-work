@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   HiOutlineArrowLeft,
+  HiOutlineChevronDown,
   HiOutlineSquares2X2,
   HiXMark,
 } from "react-icons/hi2";
@@ -47,6 +49,7 @@ export default function Sidebar({
   workspace = "hr",
 }) {
   const pathname = usePathname();
+  const [expanded, setExpanded] = useState({});
 
   const currentWorkspace =
     WORKSPACE_SETTINGS[workspace] ?? WORKSPACE_SETTINGS.hr;
@@ -137,6 +140,14 @@ export default function Sidebar({
                 item.href,
                 currentWorkspace.homeHref,
               );
+              const children = item.children?.filter((child) =>
+                hasAnyPermission(session.permissions, child.permissions),
+              ) ?? [];
+              const hasChildren = children.length > 0;
+              const expandedAtPath = expanded[item.href];
+              const isExpanded = hasChildren && (
+                expandedAtPath?.pathname === pathname ? expandedAtPath.value : isActive
+              );
 
               if (!item.enabled) {
                 return (
@@ -156,19 +167,61 @@ export default function Sidebar({
 
               return (
                 <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onClose}
-                    className={cn(
-                      "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition",
-                      isActive
-                        ? currentWorkspace.activeClassName
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
-                    )}
-                  >
-                    <Icon className="size-5 shrink-0" aria-hidden="true" />
-                    <span>{item.name}</span>
-                  </Link>
+                  <div className={cn(
+                    "flex items-center rounded-xl transition",
+                    isActive
+                      ? currentWorkspace.activeClassName
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white",
+                  )}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      aria-current={pathname === item.href ? "page" : undefined}
+                      className="flex min-h-12 min-w-0 flex-1 items-center gap-3 px-3 text-sm font-semibold"
+                    >
+                      <Icon className="size-5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{item.name}</span>
+                    </Link>
+                    {hasChildren ? (
+                      <button
+                        type="button"
+                        aria-label={`${isExpanded ? "ย่อ" : "ขยาย"}เมนู${item.name}`}
+                        aria-expanded={isExpanded}
+                        aria-controls={`submenu-${item.href.replaceAll("/", "-")}`}
+                        onClick={() => setExpanded((current) => ({
+                          ...current,
+                          [item.href]: { pathname, value: !isExpanded },
+                        }))}
+                        className="flex size-12 shrink-0 items-center justify-center rounded-xl focus-visible:outline-2 focus-visible:outline-amber-500"
+                      >
+                        <HiOutlineChevronDown className={cn("size-4 transition-transform", isExpanded && "rotate-180")} aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </div>
+                  {hasChildren && isExpanded ? (
+                    <ul id={`submenu-${item.href.replaceAll("/", "-")}`} className="ml-5 mt-1 space-y-1 border-l border-slate-200 pl-3 dark:border-slate-700">
+                      {children.map((child) => {
+                        const childActive = isNavigationActive(pathname, child.href, currentWorkspace.homeHref);
+                        return (
+                          <li key={child.href}>
+                            <Link
+                              href={child.href}
+                              onClick={onClose}
+                              aria-current={pathname === child.href ? "page" : undefined}
+                              className={cn(
+                                "flex min-h-10 items-center rounded-lg px-3 text-sm font-medium transition",
+                                childActive
+                                  ? "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900",
+                              )}
+                            >
+                              {child.name}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}

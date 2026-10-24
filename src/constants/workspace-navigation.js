@@ -18,7 +18,7 @@ export const WORKSPACE_SETTINGS = Object.freeze({
     brandClassName: "bg-amber-400 text-slate-950",
     navigation: [
       {
-        name: "ภาพรวม",
+        name: "Dashboard",
         href: "/manage",
         icon: HiOutlineHome,
         permissions: [PERMISSIONS.SERVICE_HR_ACCESS, PERMISSIONS.ORGANIZATION_MANAGE],
@@ -44,6 +44,14 @@ export const WORKSPACE_SETTINGS = Object.freeze({
         icon: HiOutlineClipboardDocumentCheck,
         permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
         enabled: true,
+        children: [
+          { name: "ประวัติการลา", href: "/manage/leave/history", permissions: [PERMISSIONS.LEAVE_READ_ALL] },
+          { name: "ประเภทการลา", href: "/manage/leave/settings", permissions: [PERMISSIONS.HR_SETTINGS_READ] },
+          { name: "Leave Templates", href: "/manage/leave/templates", permissions: [PERMISSIONS.LEAVE_BALANCE_MANAGE] },
+          { name: "มอบ Template", href: "/manage/leave/assignments", permissions: [PERMISSIONS.LEAVE_BALANCE_MANAGE] },
+          { name: "วันหยุด", href: "/manage/leave/holidays", permissions: [PERMISSIONS.HOLIDAY_MANAGE] },
+          { name: "โอนงาน HR ค้าง", href: "/manage/leave/takeover", permissions: [PERMISSIONS.LEAVE_WORKFLOW_MANAGE] },
+        ],
       },
       {
         name: "ข้อมูลบริษัท",
