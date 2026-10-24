@@ -1,6 +1,6 @@
 import "server-only";
 
-import { ALL_PERMISSIONS } from "@/constants/permissions";
+import { ALL_PERMISSIONS, PERMISSIONS } from "@/constants/permissions";
 import { getRolePermissions, isValidRole, ROLES } from "@/constants/roles";
 import { AuthSessionError } from "@/lib/auth/auth-session-error";
 import {
@@ -8,6 +8,7 @@ import {
   getPlatformUser,
 } from "@/repositories/auth/access.repository";
 import { resolveCompanyAccess } from "@/lib/auth/company-access";
+import { listActiveLeaveHrDelegations } from "@/repositories/leave/leave-hr-delegation.repository";
 
 const ACTIVE_STATUS = "ACTIVE";
 const PASSWORD_PROVIDER_ID = "password";
@@ -169,6 +170,24 @@ export async function resolveUserAccess(identity) {
     membership,
     permissionGroups,
   });
+
+  if (
+    membership.employeeId &&
+    !effectivePermissions.includes(PERMISSIONS.LEAVE_APPROVE) &&
+    !normalizePermissionList(membership.deniedPermissions).includes(
+      PERMISSIONS.LEAVE_APPROVE,
+    )
+  ) {
+    const activeDelegations = await listActiveLeaveHrDelegations({
+      organizationId,
+      employeeId: membership.employeeId,
+    });
+
+    if (activeDelegations.length > 0) {
+      effectivePermissions.push(PERMISSIONS.LEAVE_APPROVE);
+      effectivePermissions.sort();
+    }
+  }
 
   return {
     organization: {

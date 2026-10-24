@@ -57,7 +57,7 @@ export default function LeaveTypeCreate({ companyId, onClose, onCreated }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/hr/leave-types",
+        "/leave/types",
         {
           companyId,
           code: form.code.trim(),

@@ -21,6 +21,22 @@ function normalizeEmployeeCode(value) {
   return value.trim().toUpperCase();
 }
 
+function employeeCodeKeyId(normalizedCode) {
+  const invalidDocumentId =
+    normalizedCode === "." ||
+    normalizedCode === ".." ||
+    normalizedCode.includes("/") ||
+    /^__.*__$/.test(normalizedCode);
+
+  if (!invalidDocumentId) {
+    return normalizedCode;
+  }
+
+  return `code_${createHash("sha256")
+    .update(normalizedCode, "utf8")
+    .digest("hex")}`;
+}
+
 function normalizeEmail(value) {
   return value.trim().toLowerCase();
 }
@@ -264,9 +280,10 @@ export async function createEmployee({ organizationId, employeeInput, actor }) {
 
   const normalizedPrinterCode = employeeInput.printerCode?.trim() || null;
 
+  // ใน createEmployee
   const employeeCodeKeyRef = organizationRef
     .collection("employeeCodeKeys")
-    .doc(normalizedEmployeeCode);
+    .doc(employeeCodeKeyId(normalizedEmployeeCode));
 
   const printerCodeKeyRef = normalizedPrinterCode
     ? organizationRef.collection("printerCodeKeys").doc(normalizedPrinterCode)
@@ -504,9 +521,10 @@ export async function updateEmployee({
 
   const normalizedPrinterCode = employeeInput.printerCode?.trim() || null;
 
+  // ใน updateEmployee: key ใหม่
   const newEmployeeCodeKeyRef = organizationRef
     .collection("employeeCodeKeys")
-    .doc(normalizedEmployeeCode);
+    .doc(employeeCodeKeyId(normalizedEmployeeCode));
 
   const newEmailKeyRef = adminFirestore
     .collection("employeeEmailKeys")
@@ -589,9 +607,10 @@ export async function updateEmployee({
       });
     }
 
+    // ใน updateEmployee: key เดิม
     const oldEmployeeCodeKeyRef = organizationRef
       .collection("employeeCodeKeys")
-      .doc(oldEmployeeCode);
+      .doc(employeeCodeKeyId(oldEmployeeCode));
 
     const oldEmailKeyRef = adminFirestore
       .collection("employeeEmailKeys")
@@ -708,7 +727,6 @@ export async function updateEmployee({
       employmentType: employeeInput.employmentType,
       employmentStatus: employeeInput.employmentStatus,
       effectiveDate: employeeInput.effectiveDate,
-      role: employeeInput.role,
 
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor.uid,

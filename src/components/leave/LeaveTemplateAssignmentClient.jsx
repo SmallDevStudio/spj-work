@@ -33,10 +33,10 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
     let active = true;
 
     Promise.all([
-      apiClient.get("/hr/leave-templates", {
+      apiClient.get("/leave/templates", {
         params: { companyId },
       }),
-      apiClient.get("/hr/leave-template-assignments/candidates", {
+      apiClient.get("/leave/template-assignments/candidates", {
         params: { companyId },
       }),
     ])
@@ -121,7 +121,7 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/hr/leave-template-assignments/preview",
+        "/leave/template-assignments/preview",
         payload(),
         {
           headers: {
@@ -156,7 +156,7 @@ export default function LeaveTemplateAssignmentClient({ companies }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/hr/leave-template-assignments",
+        "/leave/template-assignments",
         payload(),
         {
           headers: {

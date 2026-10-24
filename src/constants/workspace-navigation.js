@@ -18,13 +18,6 @@ export const WORKSPACE_SETTINGS = Object.freeze({
     brandClassName: "bg-amber-400 text-slate-950",
     navigation: [
       {
-        name: "หน้าจัดการ",
-        href: "/manage",
-        icon: HiOutlineHome,
-        permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
-        enabled: true,
-      },
-      {
         name: "ข้อมูลพนักงาน",
         href: "/manage/employee",
         icon: HiOutlineUserGroup,
@@ -39,10 +32,10 @@ export const WORKSPACE_SETTINGS = Object.freeze({
         enabled: true,
       },
       {
-        name: "Leave Templates",
-        href: "/manage/leave/templates",
-        icon: HiOutlineClipboardDocumentCheck,
-        permissions: [PERMISSIONS.HR_SETTINGS_READ],
+        name: "การลา",
+        href: "/manage",
+        icon: HiOutlineHome,
+        permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
         enabled: true,
       },
       {

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import EmployeeDirectoryClient from "@/components/hr/EmployeeDirectoryClient";
+import EmployeeDirectoryClient from "@/components/employee/EmployeeDirectoryClient";
 import { PERMISSIONS } from "@/constants/permissions";
 import { requireAnyPermission } from "@/lib/auth/authorization";
 import { getEmployeeList } from "@/services/employee/employee.service";

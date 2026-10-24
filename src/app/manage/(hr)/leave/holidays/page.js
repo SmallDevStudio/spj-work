@@ -1,7 +1,7 @@
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
 import { readHolidayCalendarYear } from "@/services/leave/leave-calendar-query.service";
-import LeaveCalendarSettingsClient from "@/components/hr/LeaveCalendarSettingsClient";
+import LeaveCalendarSettingsClient from "@/components/leave/LeaveCalendarSettingsClient";
 
 export const dynamic = "force-dynamic";
 

@@ -12,7 +12,7 @@ async function createStateChangingHeaders() {
 export async function createDepartmentRequest(input) {
   const headers = await createStateChangingHeaders();
 
-  const response = await apiClient.post("/hr/departments", input, {
+  const response = await apiClient.post("/department", input, {
     headers,
   });
 
@@ -43,7 +43,7 @@ export async function updateDepartmentRequest({ departmentId, input }) {
   const headers = await createStateChangingHeaders();
 
   const response = await apiClient.put(
-    `/hr/departments/${departmentId}`,
+    `/department/${departmentId}`,
     input,
     {
       headers,

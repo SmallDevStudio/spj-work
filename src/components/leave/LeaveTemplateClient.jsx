@@ -45,10 +45,10 @@ export default function LeaveTemplateClient({ companies, canManage }) {
     let active = true;
 
     Promise.all([
-      apiClient.get("/hr/leave-types", {
+      apiClient.get("/leave/types", {
         params: { companyId },
       }),
-      apiClient.get("/hr/leave-templates", {
+      apiClient.get("/leave/templates", {
         params: { companyId },
       }),
     ])
@@ -147,7 +147,7 @@ export default function LeaveTemplateClient({ companies, canManage }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/hr/leave-templates",
+        "/leave/templates",
         {
           companyId,
           code: form.code.trim().toUpperCase(),

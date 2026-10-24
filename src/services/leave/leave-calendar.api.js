@@ -1,7 +1,7 @@
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
 
 export async function getHolidayCalendarRequest(year) {
-  const response = await apiClient.get("/hr/leave-calendar", {
+  const response = await apiClient.get("/leave/calendar", {
     params: { year },
   });
 
@@ -9,7 +9,7 @@ export async function getHolidayCalendarRequest(year) {
 }
 
 export async function previewGoogleHolidaysRequest(year) {
-  const response = await apiClient.get("/hr/leave-calendar/google-preview", {
+  const response = await apiClient.get("/leave/calendar/google-preview", {
     params: { year },
   });
 
@@ -30,11 +30,11 @@ async function postCalendar(path, input) {
 }
 
 export function saveHolidayCalendarDraftRequest(input) {
-  return postCalendar("/hr/leave-calendar/draft", input);
+  return postCalendar("/leave/calendar/draft", input);
 }
 
 export function publishHolidayCalendarRequest(input) {
-  return postCalendar("/hr/leave-calendar/publish", input);
+  return postCalendar("/leave/calendar/publish", input);
 }
 
 export function getHolidayCalendarErrorMessage(error) {

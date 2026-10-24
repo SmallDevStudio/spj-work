@@ -1,4 +1,4 @@
-import CompanyWorkScheduleClient from "@/components/hr/CompanyWorkScheduleClient";
+import CompanyWorkScheduleClient from "@/components/company/CompanyWorkScheduleClient";
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
 import { readCompanyWorkSchedules } from "@/services/company/company-work-schedule.service";

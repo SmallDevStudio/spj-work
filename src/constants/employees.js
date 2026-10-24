@@ -229,7 +229,7 @@ export const DEFAULT_EMPLOYEE_VALUES = Object.freeze({
 });
 
 export const EMPLOYEE_LIMITS = Object.freeze({
-  employeeCode: 30,
+  employeeCode: 8,
   firstName: 100,
   lastName: 100,
   phoneNumber: 30,

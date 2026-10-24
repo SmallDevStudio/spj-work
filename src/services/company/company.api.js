@@ -1,14 +1,14 @@
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
 
 export async function getCompaniesRequest() {
-  const response = await apiClient.get("/companies");
+  const response = await apiClient.get("/company");
   return response.data?.data?.items ?? [];
 }
 
 export async function createCompanyRequest(input) {
   const { csrfToken, headerName } = await getCsrfCredentials();
 
-  const response = await apiClient.post("/companies", input, {
+  const response = await apiClient.post("/company", input, {
     headers: {
       "Content-Type": "application/json",
       [headerName]: csrfToken,

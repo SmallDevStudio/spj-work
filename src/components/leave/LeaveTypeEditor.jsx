@@ -61,7 +61,7 @@ export default function LeaveTypeEditor({ item, companyId, onClose, onSaved }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.put(
-        `/hr/leave-types/${encodeURIComponent(item.code)}`,
+        `/leave/types/${encodeURIComponent(item.code)}`,
         {
           companyId,
           code: item.code,

@@ -1,7 +1,7 @@
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
 
 export async function getCompanyWorkSchedulesRequest(companyId) {
-  const response = await apiClient.get("/hr/company-work-schedules", {
+  const response = await apiClient.get("/company/work-schedules", {
     params: { companyId },
   });
 
@@ -11,7 +11,7 @@ export async function getCompanyWorkSchedulesRequest(companyId) {
 export async function createCompanyWorkScheduleRequest(input) {
   const { csrfToken, headerName } = await getCsrfCredentials();
 
-  const response = await apiClient.post("/hr/company-work-schedules", input, {
+  const response = await apiClient.post("/company/work-schedules", input, {
     headers: {
       "Content-Type": "application/json",
       [headerName]: csrfToken,

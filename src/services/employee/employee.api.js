@@ -12,7 +12,7 @@ async function createStateChangingHeaders() {
 export async function createEmployeeRequest(input) {
   const headers = await createStateChangingHeaders();
 
-  const response = await apiClient.post("/hr/employees", input, {
+  const response = await apiClient.post("/employee", input, {
     headers,
   });
 
@@ -42,7 +42,7 @@ export function getEmployeeApiErrorMessage(error) {
 export async function updateEmployeeRequest({ employeeId, input }) {
   const headers = await createStateChangingHeaders();
 
-  const response = await apiClient.put(`/hr/employees/${employeeId}`, input, {
+  const response = await apiClient.put(`/employee/${employeeId}`, input, {
     headers,
   });
 

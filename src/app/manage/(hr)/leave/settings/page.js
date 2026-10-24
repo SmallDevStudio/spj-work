@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import LeaveTypeSettingsClient from "@/components/hr/LeaveTypeSettingsClient";
+import LeaveTypeSettingsClient from "@/components/leave/LeaveTypeSettingsClient";
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
 import { listCompanies } from "@/repositories/company/company.repository";

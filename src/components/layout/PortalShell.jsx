@@ -18,18 +18,7 @@ import {
 import UserMenu from "@/components/layout/UserMenu";
 import { PERMISSIONS } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
-
-const mobileItems = [
-  { label: "หน้าแรก", icon: HiOutlineHome, href: ROUTES.HOME },
-  { label: "การลา", icon: HiOutlineCalendarDays, href: null },
-  {
-    label: "Services",
-    icon: HiOutlineSquares2X2,
-    href: "/#portal-services-title",
-  },
-  { label: "Inbox", icon: HiOutlineEnvelope, href: null },
-  { label: "โปรไฟล์", icon: HiOutlineUser, href: null },
-];
+import { getUserRoutes } from "@/constants/user-routes";
 
 export default function PortalShell({ children, session }) {
   const pathname = usePathname();
@@ -41,6 +30,46 @@ export default function PortalShell({ children, session }) {
     PERMISSIONS.ORGANIZATION_MANAGE,
   );
   const canAccessManagement = canAccessHr || canAccessSettings;
+
+  const userId = session.user?.uid;
+  const userRoutes = userId ? getUserRoutes(userId) : null;
+
+  const mobileItems = [
+    {
+      label: "หน้าแรก",
+      icon: HiOutlineHome,
+      href: ROUTES.HOME,
+      active: pathname === ROUTES.HOME,
+    },
+    {
+      label: "การลา",
+      icon: HiOutlineCalendarDays,
+      href: userRoutes?.LEAVE ?? null,
+      active: Boolean(
+        userRoutes &&
+        (pathname === userRoutes.LEAVE ||
+          pathname.startsWith(`${userRoutes.LEAVE}/`)),
+      ),
+    },
+    {
+      label: "Services",
+      icon: HiOutlineSquares2X2,
+      href: "/#portal-services-title",
+      active: false,
+    },
+    {
+      label: "Inbox",
+      icon: HiOutlineEnvelope,
+      href: null,
+      active: false,
+    },
+    {
+      label: "โปรไฟล์",
+      icon: HiOutlineUser,
+      href: null,
+      active: false,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f7f9fb] text-slate-950 dark:bg-slate-950 dark:text-white">
@@ -57,7 +86,7 @@ export default function PortalShell({ children, session }) {
 
           <nav
             aria-label="เมนูหลัก"
-            className="hidden h-full items-center gap-2 md:flex"
+            className="hidden h-full items-center gap-2 xl:flex"
           >
             <Link
               href={ROUTES.HOME}
@@ -147,7 +176,7 @@ export default function PortalShell({ children, session }) {
               <Link
                 href={canAccessHr ? ROUTES.MANAGE_HR : ROUTES.MANAGE_SETTINGS}
                 aria-label="เข้าสู่ Management"
-                className="flex size-10 items-center justify-center rounded-xl text-white md:hidden"
+                className="flex size-10 items-center justify-center rounded-xl text-white xl:hidden"
               >
                 <HiOutlineUserGroup className="size-6" aria-hidden="true" />
               </Link>
@@ -168,17 +197,17 @@ export default function PortalShell({ children, session }) {
         </div>
       </header>
 
-      <div className="pb-20 md:pb-0">{children}</div>
+      <div className="pb-20 xl:pb-0">{children}</div>
 
       <nav
-        aria-label="เมนูมือถือ"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden dark:border-slate-800 dark:bg-slate-900/95"
+        aria-label="เมนูบริการของพนักงาน"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl xl:hidden dark:border-slate-800 dark:bg-slate-900/95"
       >
         {mobileItems.map((item) => {
           const Icon = item.icon;
-          const active = item.href === ROUTES.HOME && pathname === ROUTES.HOME;
-          const itemClass = `flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium ${
-            active
+
+          const itemClass = `flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium sm:min-h-[72px] sm:text-xs ${
+            item.active
               ? "text-amber-600 dark:text-amber-400"
               : item.href
                 ? "text-slate-600 dark:text-slate-300"
@@ -189,17 +218,17 @@ export default function PortalShell({ children, session }) {
             <Link
               key={item.label}
               href={item.href}
-              aria-current={active ? "page" : undefined}
+              aria-current={item.active ? "page" : undefined}
               className={itemClass}
             >
               <Icon className="size-6" aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
           ) : (
-            <div key={item.label} className={itemClass}>
+            <span key={item.label} aria-disabled="true" className={itemClass}>
               <Icon className="size-6" aria-hidden="true" />
               <span>{item.label}</span>
-            </div>
+            </span>
           );
         })}
       </nav>

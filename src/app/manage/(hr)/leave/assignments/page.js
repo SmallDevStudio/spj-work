@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import LeaveTemplateAssignmentClient from "@/components/hr/LeaveTemplateAssignmentClient";
+import LeaveTemplateAssignmentClient from "@/components/leave/LeaveTemplateAssignmentClient";
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
 import { listCompanies } from "@/repositories/company/company.repository";

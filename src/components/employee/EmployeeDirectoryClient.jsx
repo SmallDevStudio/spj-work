@@ -4,14 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
-  HiOutlineDevicePhoneMobile,
-  HiOutlineEnvelope,
   HiOutlineMagnifyingGlass,
   HiOutlinePlus,
-  HiOutlineUser,
-  HiOutlineUserGroup,
   HiOutlineXMark,
-  HiOutlinePencilSquare,
 } from "react-icons/hi2";
 
 import {
@@ -39,7 +34,7 @@ import {
   getApiErrorMessage as getDepartmentApiErrorMessage,
 } from "@/services/department/organization-structure.api";
 
-import EmployeeTable from "@/components/hr/EmployeeTable";
+import EmployeeTable from "@/components/employee/EmployeeTable";
 
 const initialDepartmentForm = {
   nameTh: "",
@@ -137,6 +132,7 @@ function Field({
   placeholder = "",
   min,
   max,
+  maxLength,
   inputMode,
   pattern,
   autoComplete,
@@ -157,6 +153,7 @@ function Field({
         placeholder={placeholder}
         min={min}
         max={max}
+        maxLength={maxLength}
         inputMode={inputMode}
         pattern={pattern}
         autoComplete={autoComplete}
@@ -474,6 +471,7 @@ export default function EmployeeDirectoryClient({
 
     try {
       const input = {
+        companyId: form.companyId,
         employeeCode: form.employeeCode,
         workEmail: form.workEmail,
         firstName: form.firstName,
@@ -570,45 +568,6 @@ export default function EmployeeDirectoryClient({
           </div>
         ) : null}
 
-        <section className="mt-7 grid gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              พนักงานทั้งหมด
-            </p>
-            <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">
-              {employees.length}
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              พนักงานที่ปฏิบัติงาน
-            </p>
-            <p className="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              {
-                employees.filter(
-                  (employee) =>
-                    employee.employmentStatus === EMPLOYMENT_STATUS.ACTIVE,
-                ).length
-              }
-            </p>
-          </article>
-
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              ใช้งานระบบแล้ว
-            </p>
-            <p className="mt-2 text-3xl font-black text-emerald-600 dark:text-emerald-400">
-              {
-                employees.filter(
-                  (employee) =>
-                    employee.accessStatus === EMPLOYEE_ACCESS_STATUS.ACTIVE,
-                ).length
-              }
-            </p>
-          </article>
-        </section>
-
         <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(160px,200px))]">
             <label className="relative block">
@@ -680,116 +639,6 @@ export default function EmployeeDirectoryClient({
             </span>
           </div>
 
-          {filteredEmployees.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-6 py-14 text-center dark:border-slate-700">
-              <HiOutlineUserGroup className="mx-auto size-10 text-slate-400" />
-              <p className="mt-3 font-semibold text-slate-700 dark:text-slate-300">
-                ไม่พบข้อมูลพนักงาน
-              </p>
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-4 xl:grid-cols-2">
-              {filteredEmployees.map((employee) => (
-                <article
-                  key={employee.id}
-                  className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                      <HiOutlineUser className="size-6" aria-hidden="true" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                            {employee.employeeCode}
-                          </p>
-                          <h3 className="mt-1 truncate font-bold text-slate-950 dark:text-white">
-                            {employee.displayName}
-                          </h3>
-                        </div>
-
-                        <EmploymentStatusBadge
-                          status={employee.employmentStatus}
-                        />
-                        {canEdit ? (
-                          <button
-                            type="button"
-                            onClick={() => openEditDialog(employee)}
-                            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
-                          >
-                            <HiOutlinePencilSquare
-                              className="size-4"
-                              aria-hidden="true"
-                            />
-                            แก้ไข
-                          </button>
-                        ) : null}
-                      </div>
-
-                      <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                        {employee.positionTitle}
-                      </p>
-
-                      <div className="mt-3 grid gap-2 text-sm text-slate-500 sm:grid-cols-2 dark:text-slate-400">
-                        <p className="flex items-center gap-2">
-                          <HiOutlineBuildingOffice2 className="size-4 shrink-0" />
-                          {departmentMap.get(employee.departmentId) ||
-                            "ไม่พบแผนก"}
-                        </p>
-
-                        <div>
-                          <p className="flex items-center gap-2">
-                            <HiOutlineUser className="size-4 shrink-0" />
-                            หัวหน้า:{" "}
-                            {employee.effectiveManagerEmployeeId
-                              ? employeeMap.get(
-                                  employee.effectiveManagerEmployeeId,
-                                ) || "ไม่พบข้อมูล"
-                              : "ยังไม่กำหนด"}
-                          </p>
-
-                          <p className="mt-1 pl-6 text-xs text-slate-400">
-                            {employee.effectiveManagerSource ===
-                            MANAGER_ASSIGNMENT_TYPE.MANUAL
-                              ? "กำหนดเฉพาะบุคคล"
-                              : employee.effectiveManagerSource ===
-                                  MANAGER_ASSIGNMENT_TYPE.NONE
-                                ? "ไม่ใช้หัวหน้างาน"
-                                : "ตามหัวหน้าแผนก"}
-                          </p>
-                        </div>
-
-                        <p className="flex items-center gap-2">
-                          <HiOutlineEnvelope className="size-4 shrink-0" />
-                          <span className="truncate">
-                            {employee.workEmail || "ยังไม่มีอีเมล"}
-                          </span>
-                        </p>
-
-                        <p className="flex items-center gap-2">
-                          <span className="inline-flex size-4 shrink-0 items-center justify-center text-xs font-bold">
-                            #
-                          </span>
-                          Printer: {employee.printerCode || "-"}
-                        </p>
-
-                        <p className="flex items-center gap-2">
-                          <HiOutlineDevicePhoneMobile className="size-4 shrink-0" />
-                          {employee.phoneNumber || "-"}
-                        </p>
-                      </div>
-
-                      <div className="mt-4">
-                        <AccessStatusBadge status={employee.accessStatus} />
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
           <EmployeeTable
             employees={filteredEmployees}
             departments={departments}
@@ -863,7 +712,8 @@ export default function EmployeeDirectoryClient({
                   name="employeeCode"
                   value={form.employeeCode}
                   onChange={handleChange}
-                  placeholder="เช่น SPJ001"
+                  maxLength={8}
+                  placeholder="เช่น 1201 หรือ SPJ001"
                   required
                 />
 

@@ -1,19 +1,18 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-
 import { FieldValue } from "firebase-admin/firestore";
 
 import {
   EMPLOYEE_ACCESS_STATUS,
   EMPLOYMENT_STATUS,
 } from "@/constants/employees";
+import { ROLES } from "@/constants/roles";
 import { AuthSessionError } from "@/lib/auth/auth-session-error";
 import { adminFirestore } from "@/lib/firebase/admin";
 
 const ACTIVE_STATUS = "ACTIVE";
 const GOOGLE_PROVIDER_ID = "google.com";
-import { ROLES } from "@/constants/roles";
 
 function normalizeEmail(email) {
   return email?.trim().toLowerCase() ?? "";
@@ -138,6 +137,7 @@ export async function ensureGoogleEmployeeAccess(identity) {
     .doc(emailKey);
 
   return adminFirestore.runTransaction(async (transaction) => {
+    // Read 1: locate the employee by verified Google email.
     const emailDirectorySnapshot = await transaction.get(emailDirectoryRef);
 
     const emailDirectory = emailDirectorySnapshot.exists
@@ -164,24 +164,8 @@ export async function ensureGoogleEmployeeAccess(identity) {
       .collection("memberships")
       .doc(identity.uid);
 
-    const [companySnapshot, userSnapshot, membershipSnapshot] =
-      await Promise.all([
-        transaction.get(companyRef),
-        transaction.get(userRef),
-        transaction.get(membershipRef),
-      ]);
-
-    if (
-      !companySnapshot.exists ||
-      companySnapshot.data()?.isDeleted === true ||
-      companySnapshot.data()?.status !== ACTIVE_STATUS
-    ) {
-      throw createDeniedError({
-        code: "AUTH_EMPLOYEE_COMPANY_INACTIVE",
-        message: "บริษัทของพนักงานไม่ได้เปิดใช้งาน กรุณาติดต่อฝ่าย HR",
-      });
-    }
-
+    // Read 2: companyId must come from the employee record.
+    const employeeSnapshot = await transaction.get(employeeRef);
     const employee = employeeSnapshot.exists ? employeeSnapshot.data() : null;
 
     validateEmployee({
@@ -201,6 +185,25 @@ export async function ensureGoogleEmployeeAccess(identity) {
       .collection("companies")
       .doc(employee.companyId);
 
+    // Read 3: finish every read before writing in the transaction.
+    const [companySnapshot, userSnapshot, membershipSnapshot] =
+      await Promise.all([
+        transaction.get(companyRef),
+        transaction.get(userRef),
+        transaction.get(membershipRef),
+      ]);
+
+    if (
+      !companySnapshot.exists ||
+      companySnapshot.data()?.isDeleted === true ||
+      companySnapshot.data()?.status !== ACTIVE_STATUS
+    ) {
+      throw createDeniedError({
+        code: "AUTH_EMPLOYEE_COMPANY_INACTIVE",
+        message: "บริษัทของพนักงานไม่ได้เปิดใช้งาน กรุณาติดต่อฝ่าย HR",
+      });
+    }
+
     const platformUser = userSnapshot.exists ? userSnapshot.data() : null;
 
     const membership = membershipSnapshot.exists
@@ -218,10 +221,11 @@ export async function ensureGoogleEmployeeAccess(identity) {
       employeeId,
     });
 
-    const companyAccess = membership?.companyAccess ?? {
-      scope: "SELECTED",
-      companyIds: [employee.companyId],
-    };
+    const companyAccess =
+      membership?.companyAccess ??
+      (membership?.role === ROLES.SUPERADMIN
+        ? { scope: "ALL", companyIds: [] }
+        : { scope: "SELECTED", companyIds: [employee.companyId] });
 
     const canAccessHomeCompany =
       companyAccess.scope === "ALL" ||
@@ -268,9 +272,7 @@ export async function ensureGoogleEmployeeAccess(identity) {
             }
           : {}),
       },
-      {
-        merge: true,
-      },
+      { merge: true },
     );
 
     transaction.set(
@@ -279,11 +281,6 @@ export async function ensureGoogleEmployeeAccess(identity) {
         organizationId,
         userId: identity.uid,
         employeeId,
-        companyAccess:
-          membership?.companyAccess ??
-          (membership?.role === ROLES.SUPERADMIN
-            ? { scope: "ALL", companyIds: [] }
-            : { scope: "SELECTED", companyIds: [employee.companyId] }),
         companyAccess,
         role: membership?.role ?? employee.role,
         status: membership?.status ?? ACTIVE_STATUS,
@@ -302,9 +299,7 @@ export async function ensureGoogleEmployeeAccess(identity) {
             }
           : {}),
       },
-      {
-        merge: true,
-      },
+      { merge: true },
     );
 
     transaction.update(employeeRef, {
@@ -324,9 +319,7 @@ export async function ensureGoogleEmployeeAccess(identity) {
         updatedAt: FieldValue.serverTimestamp(),
         updatedBy: identity.uid,
       },
-      {
-        merge: true,
-      },
+      { merge: true },
     );
 
     if (shouldCreateUser || shouldCreateMembership || shouldLinkEmployee) {

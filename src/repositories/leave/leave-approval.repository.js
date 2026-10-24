@@ -2,14 +2,19 @@ import "server-only";
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-import { decideLeaveApproval } from "@/modules/leave/leave-approval-transition";
+import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
+import { decideLeaveApproval } from "@/modules/leave/leave-approval-transition";
+import { decideParallelLeaveApproval } from "@/modules/leave/leave-parallel-approval-transition";
+import { ROLES } from "@/constants/roles";
+import {
+  canAccessCompany,
+  resolveCompanyAccess,
+} from "@/lib/auth/company-access";
+import { listActiveLeaveHrDelegations } from "@/repositories/leave/leave-hr-delegation.repository";
 
-function createError(code, message, status) {
-  const error = new Error(message);
-  error.code = code;
-  error.status = status;
-  return error;
+function fail(code, message, status) {
+  throw new ApplicationError({ code, message, status });
 }
 
 function validId(value) {
@@ -21,9 +26,33 @@ function validId(value) {
   );
 }
 
+function decideWithExpectedErrorMapping(input, isParallel) {
+  try {
+    return isParallel
+      ? decideParallelLeaveApproval(input)
+      : decideLeaveApproval(input);
+  } catch (error) {
+    if (
+      error?.code &&
+      Number.isInteger(error.status) &&
+      error.status >= 400 &&
+      error.status < 500
+    ) {
+      throw new ApplicationError({
+        code: error.code,
+        message: error.message,
+        status: error.status,
+        details: error.details ?? null,
+      });
+    }
+
+    throw error;
+  }
+}
+
 /**
- * actor ต้องมาจาก server session ที่ตรวจ LEAVE_APPROVE แล้ว
- * transaction จะตรวจบัญชีพนักงานและรายชื่อผู้อนุมัติซ้ำ
+ * actor ต้องมาจาก session ที่ผ่านการตรวจ LEAVE_APPROVE
+ * การอ่านสถานะและบันทึกผลอยู่ใน transaction เดียวกัน
  */
 export async function decideLeaveRequest({
   organizationId,
@@ -31,13 +60,15 @@ export async function decideLeaveRequest({
   actor,
   decision,
   comment,
+  financialDisposition = null,
+  financialReason = null,
 }) {
   if (!validId(organizationId) || !validId(leaveRequestId)) {
-    throw createError("INVALID_LEAVE_REQUEST_ID", "รหัสใบลาไม่ถูกต้อง", 400);
+    fail("INVALID_LEAVE_REQUEST_ID", "รหัสใบลาไม่ถูกต้อง", 400);
   }
 
   if (!actor?.uid || !validId(actor.employeeId)) {
-    throw createError(
+    fail(
       "LEAVE_APPROVER_IDENTITY_REQUIRED",
       "ไม่พบข้อมูลพนักงานของผู้อนุมัติ",
       403,
@@ -73,7 +104,7 @@ export async function decideLeaveRequest({
       leaveSnapshot.data()?.isDeleted === true ||
       leaveSnapshot.data()?.organizationId !== organizationId
     ) {
-      throw createError("LEAVE_REQUEST_NOT_FOUND", "ไม่พบใบลา", 404);
+      fail("LEAVE_REQUEST_NOT_FOUND", "ไม่พบใบลา", 404);
     }
 
     const employee = employeeSnapshot.exists ? employeeSnapshot.data() : null;
@@ -86,12 +117,13 @@ export async function decideLeaveRequest({
       !employee ||
       employee.isDeleted === true ||
       employee.employmentStatus !== "ACTIVE" ||
+      employee.accessStatus !== "ACTIVE" ||
       employee.userId !== actor.uid ||
       !membership ||
       membership.status !== "ACTIVE" ||
       membership.employeeId !== actor.employeeId
     ) {
-      throw createError(
+      fail(
         "LEAVE_APPROVER_ACCOUNT_INVALID",
         "บัญชีผู้อนุมัติไม่พร้อมใช้งาน",
         403,
@@ -99,18 +131,69 @@ export async function decideLeaveRequest({
     }
 
     const before = leaveSnapshot.data();
+    const isParallel = before.approval?.mode === "PARALLEL_ALL";
+    const pendingHrStep = isParallel
+      ? before.approval.steps?.find(
+          (step) =>
+            step.key === "HR" &&
+            step.status === "PENDING" &&
+            step.approverEmployeeIds?.includes(actor.employeeId),
+        )
+      : null;
 
-    const result = decideLeaveApproval({
-      request: before,
-      actorEmployeeId: actor.employeeId,
-      actorUid: actor.uid,
-      decision,
-      comment,
-      decidedAt: Timestamp.now().toDate(),
-    });
+    if (pendingHrStep) {
+      let normalHrAccess = false;
+
+      if ([ROLES.HR_ADMIN, ROLES.HR_OFFICER].includes(membership.role)) {
+        try {
+          normalHrAccess = canAccessCompany(
+            resolveCompanyAccess({
+              role: membership.role,
+              companyAccess: membership.companyAccess,
+            }),
+            before.companyId,
+          );
+        } catch {
+          normalHrAccess = false;
+        }
+      }
+
+      const activeDelegations = await listActiveLeaveHrDelegations({
+        organizationId,
+        employeeId: actor.employeeId,
+        companyId: before.companyId,
+        transaction,
+      });
+
+      const delegatedAccess = activeDelegations.some(
+        (item) => item.delegateUid === actor.uid,
+      );
+
+      if (!normalHrAccess && !delegatedAccess) {
+        throw new ApplicationError({
+          code: "LEAVE_HR_APPROVER_ACCESS_REVOKED",
+          message:
+            "สิทธิ์ HR สำหรับบริษัทนี้หมดอายุหรือถูกยกเลิกแล้ว กรุณาให้ผู้ดูแลมอบหมายใหม่",
+          status: 403,
+        });
+      }
+    }
+
+    const result = decideWithExpectedErrorMapping(
+      {
+        request: before,
+        actorEmployeeId: actor.employeeId,
+        actorUid: actor.uid,
+        decision,
+        comment,
+        financialDisposition,
+        financialReason,
+        decidedAt: Timestamp.now().toDate(),
+      },
+      isParallel,
+    );
 
     const auditRef = organizationRef.collection("auditLogs").doc();
-
     const outboxRef = organizationRef.collection("notificationOutbox").doc();
 
     transaction.update(leaveRef, {
@@ -123,75 +206,60 @@ export async function decideLeaveRequest({
 
     transaction.set(auditRef, {
       organizationId,
-
       actor: {
         uid: actor.uid,
         email: actor.email ?? null,
         role: actor.role ?? null,
       },
-
       action: decision === "APPROVE" ? "LEAVE_APPROVE" : "LEAVE_REJECT",
-
       entityType: "LEAVE_REQUEST",
       entityId: leaveRequestId,
       source: "WEB",
-
       summary: `Leave decision ${decision} by employee ${actor.employeeId}.`,
-
       before: {
         status: before.status,
-
+        approvalMode: before.approval?.mode ?? "SEQUENTIAL",
         currentStepIndex: before.approval?.currentStepIndex ?? null,
       },
-
       after: {
         status: result.status,
-
-        currentStepIndex: result.approval.currentStepIndex,
-
         decision,
-
+        track: result.event.track ?? null,
+        step: result.event.step ?? null,
         decidedByEmployeeId: actor.employeeId,
+        currentStepIndex: result.approval.currentStepIndex ?? null,
       },
-
       metadata: {
         companyId: before.companyId ?? null,
-        step: result.event.step,
+        financialDisposition:
+          result.event.track === "HR" && decision === "APPROVE"
+            ? financialDisposition
+            : null,
       },
-
       createdAt: FieldValue.serverTimestamp(),
     });
 
     transaction.set(outboxRef, {
       organizationId,
-
       companyId: before.companyId ?? null,
-
       type: "LEAVE_DECISION_RECORDED",
-
       status: "PENDING",
       leaveRequestId,
-
       requesterEmployeeId: before.employeeId,
-
       actorEmployeeId: actor.employeeId,
-
       decision,
       resultStatus: result.status,
-
-      currentStepIndex: result.approval.currentStepIndex,
-
+      track: result.event.track ?? null,
+      currentStepIndex: result.approval.currentStepIndex ?? null,
       createdAt: FieldValue.serverTimestamp(),
     });
 
     return {
       leaveRequestId,
       status: result.status,
-
-      currentStepIndex: result.approval.currentStepIndex,
-
+      track: result.event.track ?? null,
+      currentStepIndex: result.approval.currentStepIndex ?? null,
       decisionByEmployeeId: actor.employeeId,
-
       decidedAt: result.event.decidedAt,
     };
   });

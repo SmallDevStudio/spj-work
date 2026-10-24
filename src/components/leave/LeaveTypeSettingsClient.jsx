@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { HiOutlineCalendarDays } from "react-icons/hi2";
 
 import { apiClient, getCsrfCredentials } from "@/lib/axios/api-client";
-import LeaveTypeEditor from "@/components/hr/LeaveTypeEditor";
-import LeaveTypeCreate from "@/components/hr/LeaveTypeCreate";
+import LeaveTypeEditor from "@/components/leave/LeaveTypeEditor";
+import LeaveTypeCreate from "@/components/leave/LeaveTypeCreate";
 
 const countingLabels = {
   WORKING_DAYS: "วันทำงาน",
@@ -44,7 +44,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
     let active = true;
 
     apiClient
-      .get("/hr/leave-types", {
+      .get("/leave/types", {
         params: { companyId },
       })
       .then((response) => {
@@ -88,7 +88,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
       const { csrfToken, headerName } = await getCsrfCredentials();
 
       const response = await apiClient.post(
-        "/hr/leave-types/presets",
+        "/leave/types/presets",
         {
           companyId,
           effectiveFrom,
@@ -103,7 +103,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
 
       const result = response.data?.data?.result;
 
-      const listResponse = await apiClient.get("/hr/leave-types", {
+      const listResponse = await apiClient.get("/leave/types", {
         params: { companyId },
       });
 

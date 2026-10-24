@@ -119,10 +119,6 @@ const employeeCodeSchema = z
       .max(
         EMPLOYEE_LIMITS.employeeCode,
         `รหัสพนักงานต้องไม่เกิน ${EMPLOYEE_LIMITS.employeeCode} ตัวอักษร`,
-      )
-      .regex(
-        /^[A-Za-z0-9._/-]+$/,
-        "รหัสพนักงานใช้ได้เฉพาะตัวอักษรภาษาอังกฤษ ตัวเลข จุด ขีดกลาง ขีดล่าง และเครื่องหมายทับ",
       ),
   )
   .transform((value) => value.toUpperCase());

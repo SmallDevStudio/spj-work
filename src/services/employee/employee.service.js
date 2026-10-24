@@ -187,7 +187,13 @@ export async function updateEmployeeDetails({
     });
   }
 
-  const validationResult = employeeCreateSchema.safeParse(input);
+  // ฟอร์มแก้ข้อมูลทั่วไปไม่ใช่ช่องทางเปลี่ยน role
+  // รองรับข้อมูลเดิมจาก UI ที่ยังส่ง role มาด้วยโดยไม่ให้
+  // role=ADMIN/HR_ADMIN ทำให้ validation ล้มเหลว
+  const validationResult = employeeCreateSchema.safeParse({
+    ...input,
+    role: "EMPLOYEE",
+  });
 
   if (!validationResult.success) {
     throw new ApplicationError({

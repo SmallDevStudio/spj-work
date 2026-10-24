@@ -27,8 +27,8 @@ export default function EmployeeCompanyMigrationClient() {
     let active = true;
 
     Promise.all([
-      apiClient.get("/hr/employee-company-migration"),
-      apiClient.get("/companies"),
+      apiClient.get("/employee/company-migration"),
+      apiClient.get("/company"),
     ])
       .then(([employeesResponse, companiesResponse]) => {
         if (!active) return;
@@ -79,7 +79,7 @@ export default function EmployeeCompanyMigrationClient() {
 
         try {
           await apiClient.put(
-            `/hr/employees/${encodeURIComponent(employeeId)}/company`,
+            `/employee/${encodeURIComponent(employeeId)}/company`,
             { companyId },
             {
               headers: {

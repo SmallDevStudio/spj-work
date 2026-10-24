@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import OrganizationStructureClient from "@/components/hr/OrganizationStructureClient";
+import OrganizationStructureClient from "@/components/department/OrganizationStructureClient";
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
 import { getEmployeeList } from "@/services/employee/employee.service";
