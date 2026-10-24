@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { HiArrowLeft, HiOutlineBuildingOffice2, HiPlus } from "react-icons/hi2";
+import { HiArrowLeft, HiPlus } from "react-icons/hi2";
+import ImageUploadDialog, { ImagePlaceholder } from "@/components/common/ImageUploadDialog";
 import ManagePageHero from "@/components/layout/ManagePageHero";
 import TablePagination from "@/components/common/TablePagination";
 import { useTablePagination } from "@/hooks/useTablePagination";
@@ -19,11 +20,11 @@ function CompanyLogo({ company, size = 64 }) {
   const [failed, setFailed] = useState(false);
   return <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" style={{ width: size, height: size }}>
     {company.logoUrl && !failed ? <Image unoptimized src={company.logoUrl} width={size} height={size} alt={`โลโก้ ${company.nameTh}`} className="h-full w-full object-contain" onError={() => setFailed(true)} /> :
-      <HiOutlineBuildingOffice2 className="size-7" aria-hidden="true" />}
+      <ImagePlaceholder size={size} />}
   </div>;
 }
 
-function CompanyForm({ form, setForm, editing, busy, onSubmit, onCancel }) {
+function CompanyForm({ form, setForm, editing, busy, onSubmit, onCancel, onUploadLogo }) {
   const fields = [
     { key: "nameTh", label: "ชื่อบริษัท", required: true, maxLength: 150 },
     { key: "email", label: "อีเมล", type: "email", maxLength: 254 },
@@ -31,9 +32,9 @@ function CompanyForm({ form, setForm, editing, busy, onSubmit, onCancel }) {
     { key: "address", label: "ที่อยู่", maxLength: 1000 },
   ];
   return <form onSubmit={onSubmit} className="space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900">
-    <div className="flex items-center gap-4"><CompanyLogo key={form.logoUrl} company={form} size={72} />
+    <div className="flex items-center gap-4"><button type="button" disabled={!editing || busy} onClick={onUploadLogo} aria-label="อัปโหลดโลโก้บริษัท" className="rounded-2xl focus-visible:outline-2 focus-visible:outline-amber-500 disabled:cursor-default"><CompanyLogo key={form.logoUrl} company={form} size={96} /></button>
       <div><h2 className="text-lg font-bold text-slate-950 dark:text-white">ข้อมูลบริษัท</h2>
-        <p className="text-sm text-slate-500">รูปโลโก้แสดงจาก URL การอัปโหลดรูปจะเพิ่มในขั้นต่อไป</p></div></div>
+        <p className="text-sm text-slate-500">{editing ? "กดที่รูปเพื่ออัปโหลดโลโก้ · แนะนำ 512 × 512 px · ไม่เกิน 2 MB" : "บันทึกบริษัทก่อน แล้วจึงอัปโหลดโลโก้ได้"}</p></div></div>
     <div className="grid gap-5 sm:grid-cols-2">
       {!editing && <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">รหัสบริษัท *
         <input required maxLength={20} value={form.code} onChange={(event) => setForm((old) => ({ ...old, code: event.target.value.toUpperCase() }))} className={inputClass} /></label>}
@@ -43,8 +44,6 @@ function CompanyForm({ form, setForm, editing, busy, onSubmit, onCancel }) {
         <select value={form.status} onChange={(event) => setForm((old) => ({ ...old, status: event.target.value }))} className={inputClass}>
           <option value="ACTIVE">ใช้งาน</option><option value="INACTIVE">ไม่ใช้งาน</option>
         </select></label>
-      <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">URL โลโก้ (HTTPS)
-        <input type="url" maxLength={1000} value={form.logoUrl} onChange={(event) => setForm((old) => ({ ...old, logoUrl: event.target.value }))} className={inputClass} placeholder="https://..." /></label>
     </div>
     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">รายละเอียด
       <textarea rows={3} maxLength={500} value={form.description} onChange={(event) => setForm((old) => ({ ...old, description: event.target.value }))} className={inputClass} /></label>
@@ -62,6 +61,7 @@ export default function CompanyDirectoryClient({ canManageSchedule = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const pagination = useTablePagination(companies);
   const selected = companies.find((item) => item.id === selectedId);
 
@@ -116,6 +116,13 @@ export default function CompanyDirectoryClient({ canManageSchedule = false }) {
     finally { setBusy(false); }
   }
 
+  async function saveUploadedLogo(url) {
+    const item = await updateCompanyRequest(selectedId, { logoUrl: url });
+    setCompanies((current) => current.map((entry) => entry.id === item.id ? { ...entry, ...item } : entry));
+    setForm((current) => ({ ...current, logoUrl: url }));
+    setMessage("อัปเดตโลโก้บริษัทแล้ว");
+  }
+
   const updateSchedule = (workSchedule) => {
     setCompanies((current) => current.map((company) => company.id === selectedId ? { ...company, workSchedule } : company));
   };
@@ -147,7 +154,7 @@ export default function CompanyDirectoryClient({ canManageSchedule = false }) {
 
     {screen === "detail" && selected && <div className="space-y-5">
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4"><CompanyLogo key={selected.logoUrl ?? selected.id} company={selected} size={76} />
+        <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4"><button type="button" onClick={() => setUploadOpen(true)} aria-label="อัปโหลดโลโก้บริษัท" className="rounded-2xl focus-visible:outline-2 focus-visible:outline-amber-500"><CompanyLogo key={selected.logoUrl ?? selected.id} company={selected} size={76} /></button>
           <div><h2 className="text-xl font-bold dark:text-white">{selected.nameTh}</h2><p className="text-sm text-slate-500">{selected.code} · {selected.status === "ACTIVE" ? "ใช้งาน" : "ไม่ใช้งาน"}</p></div></div>
           <button type="button" onClick={() => openEdit(selected)} className="min-h-11 rounded-xl bg-amber-400 px-5 font-bold text-slate-950">แก้ไขข้อมูล</button></div>
         <dl className="mt-6 grid gap-5 border-t border-slate-200 pt-5 text-sm sm:grid-cols-2 dark:border-slate-800">{[
@@ -158,8 +165,9 @@ export default function CompanyDirectoryClient({ canManageSchedule = false }) {
     </div>}
 
     {screen === "edit" && selected && <div className="space-y-5">
-      <CompanyForm form={form} setForm={setForm} editing busy={busy} onSubmit={save} onCancel={() => setScreen("detail")} />
+      <CompanyForm form={form} setForm={setForm} editing busy={busy} onSubmit={save} onCancel={() => setScreen("detail")} onUploadLogo={() => setUploadOpen(true)} />
       {canManageSchedule && selected.status === "ACTIVE" && <CompanyWorkScheduleClient key={selected.id} company={selected} onSaved={updateSchedule} />}
     </div>}
+    {uploadOpen && (screen === "edit" || screen === "detail") && <ImageUploadDialog onClose={() => setUploadOpen(false)} onUploaded={saveUploadedLogo} purpose="company-logo" companyId={selectedId} />}
   </div>;
 }

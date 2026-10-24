@@ -11,6 +11,7 @@ const serverEnvironment = Object.freeze({
   firebaseAdminProjectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
   firebaseAdminClientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
   firebaseAdminPrivateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+  firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET?.trim() || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
   csrfSecret: process.env.CSRF_SECRET,
   allowedOrigins: Object.freeze(allowedOrigins),
   emergencySuperadminEmail:
