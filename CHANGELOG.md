@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- ย้ายหน้าจัดการการลาไปที่ `/manage/leave` และสร้าง `/manage` เป็นหน้ารวมหมวดงาน พร้อมแก้ลิงก์เมนูการลา
 - แปลง Firestore Timestamp ในผลอนุมัติของ Dev Test เป็น ISO string ก่อนส่งจาก Server Component ไป Client Component เพื่อเปิดรายการจากการแจ้งเตือนได้หลังอนุมัติ
 
 ### Known limitations

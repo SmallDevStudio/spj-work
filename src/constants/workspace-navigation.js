@@ -18,6 +18,13 @@ export const WORKSPACE_SETTINGS = Object.freeze({
     brandClassName: "bg-amber-400 text-slate-950",
     navigation: [
       {
+        name: "ภาพรวม",
+        href: "/manage",
+        icon: HiOutlineHome,
+        permissions: [PERMISSIONS.SERVICE_HR_ACCESS, PERMISSIONS.ORGANIZATION_MANAGE],
+        enabled: true,
+      },
+      {
         name: "ข้อมูลพนักงาน",
         href: "/manage/employee",
         icon: HiOutlineUserGroup,
@@ -33,8 +40,8 @@ export const WORKSPACE_SETTINGS = Object.freeze({
       },
       {
         name: "การลา",
-        href: "/manage",
-        icon: HiOutlineHome,
+        href: "/manage/leave",
+        icon: HiOutlineClipboardDocumentCheck,
         permissions: [PERMISSIONS.SERVICE_HR_ACCESS],
         enabled: true,
       },
