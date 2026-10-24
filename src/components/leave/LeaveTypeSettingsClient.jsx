@@ -137,7 +137,7 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
 
   return (
     <div className="space-y-7">
-      <section className="rounded-[2rem] bg-slate-950 px-6 py-8 text-white shadow-xl sm:px-10 sm:py-10">
+      <section className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
         <div className="flex items-center gap-3">
           <HiOutlineCalendarDays
             className="size-7 text-amber-400"
@@ -148,9 +148,9 @@ export default function LeaveTypeSettingsClient({ companies, canManage }) {
           </p>
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight">ประเภทการลา</h1>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">ประเภทการลา</h1>
 
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
           ตั้งค่าประเภทการลาแยกตามบริษัท
           โดยรายการที่มีอยู่แล้วจะไม่ถูกเขียนทับเมื่อกดติดตั้งซ้ำ
         </p>

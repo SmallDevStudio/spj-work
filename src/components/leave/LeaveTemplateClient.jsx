@@ -193,12 +193,12 @@ export default function LeaveTemplateClient({ companies, canManage }) {
 
   return (
     <div className="space-y-7">
-      <section className="rounded-[2rem] bg-slate-950 px-6 py-8 text-white shadow-xl sm:px-10 sm:py-10">
+      <section className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
           Leave Templates
         </p>
-        <h1 className="mt-3 text-3xl font-black">แม่แบบสิทธิ์วันลา</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-300">
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">แม่แบบสิทธิ์วันลา</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
           กำหนดสิทธิ์เริ่มต้นแยกบริษัท และปรับจำนวนวันของแต่ละประเภทใน template
         </p>
       </section>

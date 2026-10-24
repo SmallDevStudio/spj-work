@@ -116,8 +116,11 @@ export default function LeaveDevTestClient({ initialRun, userId }) {
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
-      <Link href="/manage/leave" className="text-sm font-semibold text-sky-700">← กลับการลา</Link>
-      <h1 className="mt-4 text-3xl font-black">Leave Dev Test</h1>
+      <section className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
+        <Link href="/manage/leave" className="text-sm font-semibold text-amber-400">← กลับการลา</Link>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Leave Dev Test</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-300">ทดสอบการนับวันและการอนุมัติด้วยข้อมูลจำลอง</p>
+      </section>
       <p className="mt-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
         จำลองพนักงาน หัวหน้า และ HR ในชุดข้อมูลทดสอบแยกจากใบลาจริง
         แต่ใช้กฎนับวันและการอนุมัติเดียวกัน เหตุการณ์แจ้งเตือนจะเข้าบัญชี SUPERADMIN ของคุณ

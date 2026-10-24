@@ -264,19 +264,19 @@ export default function LeaveCalendarSettingsClient({
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
-      <header className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white sm:px-8">
+      <header className="rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-xl sm:px-8">
         <div className="flex items-start gap-4">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
             <HiOutlineCalendarDays className="size-6" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-amber-400">
-              HR Settings
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-400">
+              Leave Management
             </p>
-            <h1 className="mt-2 text-2xl font-black sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
               ปฏิทินวันหยุด
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
+            <p className="mt-3 text-sm leading-6 text-slate-300">
               เลือกวันหยุดไทยจาก Google และเพิ่มวันหยุดพิเศษของบริษัท
             </p>
           </div>
