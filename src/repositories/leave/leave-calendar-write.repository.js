@@ -97,29 +97,31 @@ export async function saveLeaveCalendarDraft({ organizationId, data, actor }) {
 
     const existing = snapshot.exists ? snapshot.data() : null;
 
-    if (existing?.status === "PUBLISHED") {
-      fail(
-        "LEAVE_CALENDAR_ALREADY_PUBLISHED",
-        "ปฏิทินปีนี้เผยแพร่แล้ว ต้องแก้ไขผ่าน version ใหม่",
-      );
-    }
-
-    revision = (existing?.revision ?? 0) + 1;
+    revision = (existing?.pendingDraft?.revision ?? existing?.revision ?? 0) + 1;
 
     // เขียนเอกสารทั้งชุด เพื่อเอา workingWeekdays
     // ที่เคยอยู่ในฉบับร่างออกจริง
-    transaction.set(calendarRef, {
-      organizationId,
-      ...calendar,
-      status: "DRAFT",
-      revision,
-      publishedAt: null,
-      publishedBy: null,
-      createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
-      createdBy: existing?.createdBy ?? actor.uid,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: actor.uid,
-    });
+    if (existing?.status === "PUBLISHED") {
+      // Keep the published calendar active until the next revision is approved.
+      transaction.update(calendarRef, {
+        pendingDraft: { ...calendar, revision, savedAt: FieldValue.serverTimestamp(), savedBy: actor.uid },
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: actor.uid,
+      });
+    } else {
+      transaction.set(calendarRef, {
+        organizationId,
+        ...calendar,
+        status: "DRAFT",
+        revision,
+        publishedAt: null,
+        publishedBy: null,
+        createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
+        createdBy: existing?.createdBy ?? actor.uid,
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: actor.uid,
+      });
+    }
 
     transaction.set(auditRef, {
       organizationId,
@@ -133,13 +135,15 @@ export async function saveLeaveCalendarDraft({ organizationId, data, actor }) {
         ? {
             revision: existing.revision,
             status: existing.status,
-            holidayDates: existing.holidayDates ?? [],
+            holidayDates: existing.pendingDraft?.holidayDates ?? existing.holidayDates ?? [],
+            holidays: existing.pendingDraft?.holidays ?? existing.holidays ?? [],
           }
         : null,
       after: {
         revision,
-        status: "DRAFT",
+        status: existing?.status === "PUBLISHED" ? "PENDING_REVISION" : "DRAFT",
         holidayDates: calendar.holidayDates,
+        holidays: calendar.holidays,
       },
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -188,11 +192,10 @@ export async function publishLeaveCalendarYear({
 
     const existing = snapshot.exists ? snapshot.data() : null;
 
-    if (
-      !existing ||
-      existing.status !== "DRAFT" ||
-      existing.revision !== expectedRevision
-    ) {
+    const pendingRevision = existing?.status === "PUBLISHED" &&
+      existing.pendingDraft?.revision === expectedRevision;
+    if (!existing || (!pendingRevision &&
+      (existing.status !== "DRAFT" || existing.revision !== expectedRevision))) {
       fail(
         "LEAVE_CALENDAR_REVISION_CONFLICT",
         "ฉบับร่างถูกแก้ไขหรือเผยแพร่แล้ว กรุณาโหลดข้อมูลใหม่",
@@ -201,15 +204,31 @@ export async function publishLeaveCalendarYear({
 
     const calendar = normalizeCalendar({
       year,
-      holidays: existing.holidays,
+      holidays: pendingRevision ? existing.pendingDraft.holidays : existing.holidays,
     });
 
     if (calendar.holidays.length === 0) {
       fail("LEAVE_CALENDAR_EMPTY", "ยังไม่มีวันหยุดในปีนี้");
     }
 
+    if (pendingRevision) {
+      transaction.set(calendarRef.collection("versions").doc(String(existing.revision)), {
+        organizationId,
+        year,
+        revision: existing.revision,
+        holidays: existing.holidays,
+        holidayDates: existing.holidayDates,
+        publishedAt: existing.publishedAt,
+        publishedBy: existing.publishedBy,
+        archivedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     transaction.update(calendarRef, {
+      ...calendar,
+      revision: expectedRevision,
       status: "PUBLISHED",
+      pendingDraft: FieldValue.delete(),
       publishedAt: FieldValue.serverTimestamp(),
       publishedBy: actor.uid,
       updatedAt: FieldValue.serverTimestamp(),
@@ -226,12 +245,16 @@ export async function publishLeaveCalendarYear({
       summary: `Published leave calendar ` + `for ${year}.`,
       before: {
         revision: existing.revision,
-        status: "DRAFT",
+        status: existing.status,
+        holidayDates: existing.holidayDates ?? [],
+        holidays: existing.holidays ?? [],
       },
       after: {
-        revision: existing.revision,
+        revision: expectedRevision,
         status: "PUBLISHED",
         holidayCount: calendar.holidays.length,
+        holidayDates: calendar.holidayDates,
+        holidays: calendar.holidays,
       },
       createdAt: FieldValue.serverTimestamp(),
     });

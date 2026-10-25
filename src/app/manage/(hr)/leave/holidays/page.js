@@ -1,26 +1,26 @@
 import { PERMISSIONS } from "@/constants/permissions";
 import { requirePermission } from "@/lib/auth/authorization";
-import { readHolidayCalendarYear } from "@/services/leave/leave-calendar-query.service";
-import LeaveCalendarSettingsClient from "@/components/leave/LeaveCalendarSettingsClient";
+import { readHolidayCalendarYears } from "@/services/leave/leave-calendar-query.service";
+import { listCompanies } from "@/repositories/company/company.repository";
+import HolidayYearDirectory from "@/components/leave/HolidayYearDirectory";
+import { ROLES } from "@/constants/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function HolidaySettingsPage() {
   const currentSession = await requirePermission(PERMISSIONS.HOLIDAY_MANAGE);
 
-  const year = Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Bangkok",
-      year: "numeric",
-    }).format(new Date()),
-  );
+  const [years, companies] = await Promise.all([
+    readHolidayCalendarYears({ currentSession }),
+    listCompanies({ organizationId: currentSession.access.organization.id }),
+  ]);
+  const access = currentSession.access.membership.companyAccess;
+  const globalCalendarAccess = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.HR_ADMIN]
+    .includes(currentSession.access.membership.role) &&
+    currentSession.access.permissions.includes(PERMISSIONS.LEAVE_CALENDAR_READ_ALL);
+  const availableCompanies = companies
+    .filter((company) => globalCalendarAccess || access.scope === "ALL" || access.companyIds?.includes(company.id))
+    .map(({ id, code, nameTh, logoUrl }) => ({ id, code, nameTh, logoUrl }));
 
-  const initialItem = await readHolidayCalendarYear({
-    currentSession,
-    year: String(year),
-  });
-
-  return (
-    <LeaveCalendarSettingsClient initialYear={year} initialItem={initialItem} />
-  );
+  return <HolidayYearDirectory years={years} companies={availableCompanies} />;
 }

@@ -7,11 +7,22 @@ export const metadata = {
   title: "เข้าสู่ระบบ",
 };
 
-export default async function LoginPage() {
+function safeReturnTo(value) {
+  if (typeof value !== "string" || !value.startsWith("/") ||
+      value.startsWith("//") || /[\\\r\n]|%2f|%5c/i.test(value)) return "/";
+  return value === "/" || value === "/profile" || value === "/settings" ||
+    /^\/line\/(leave-new|leave|services|profile|notifications)$/.test(value) ||
+    /^\/manage(?:\/[a-z0-9-/]+)?$/.test(value)
+    ? value : "/";
+}
+
+export default async function LoginPage({ searchParams }) {
+  const { returnTo } = await searchParams;
+  const destination = safeReturnTo(returnTo);
   const currentSession = await getCurrentApplicationSession().catch(() => null);
 
   if (currentSession) {
-    redirect("/");
+    redirect(destination);
   }
 
   return (
@@ -41,7 +52,7 @@ export default async function LoginPage() {
         </section>
 
         <div className="flex justify-center lg:justify-end">
-          <LoginForm />
+          <LoginForm returnTo={destination} />
         </div>
       </div>
     </main>

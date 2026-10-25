@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { HiChevronDown, HiOutlineUserCircle } from "react-icons/hi2";
 
 import LogoutButton from "@/components/auth/LogoutButton";
+import { getUserRoutes } from "@/constants/user-routes";
 import { cn } from "@/lib/utils/cn";
 
 function getInitials(name, email) {
@@ -79,6 +81,7 @@ export default function UserMenu({ session }) {
           </div>
 
           <div className="mt-3">
+            {session.user?.uid && <Link href={getUserRoutes(session.user.uid).PROFILE} onClick={() => setIsOpen(false)} role="menuitem" className="mb-2 block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800">ข้อมูลของฉัน</Link>}
             <LogoutButton />
           </div>
         </div>

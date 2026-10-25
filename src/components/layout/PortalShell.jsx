@@ -65,8 +65,8 @@ export default function PortalShell({ children, session }) {
     {
       label: "โปรไฟล์",
       icon: HiOutlineUser,
-      href: null,
-      active: false,
+      href: userRoutes?.PROFILE ?? null,
+      active: pathname === userRoutes?.PROFILE,
     },
   ];
 

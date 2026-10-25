@@ -58,7 +58,7 @@ function getAuthenticationErrorMessage(error) {
   );
 }
 
-export default function LoginForm() {
+export default function LoginForm({ returnTo = "/" }) {
   const router = useRouter();
 
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -82,7 +82,7 @@ export default function LoginForm() {
   const isLoading = googleLoading || emergencyLoading;
 
   function redirectAfterLogin() {
-    router.replace("/");
+    router.replace(returnTo);
     router.refresh();
   }
 

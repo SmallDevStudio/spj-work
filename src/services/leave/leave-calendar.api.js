@@ -37,6 +37,10 @@ export function publishHolidayCalendarRequest(input) {
   return postCalendar("/leave/calendar/publish", input);
 }
 
+export function prepareHolidayAnnouncementRequest(input) {
+  return postCalendar("/leave/calendar/print", input);
+}
+
 export function getHolidayCalendarErrorMessage(error) {
   const apiError = error?.response?.data?.error;
 

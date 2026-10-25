@@ -3,6 +3,7 @@ import {
   HiOutlineClipboardDocumentCheck,
   HiOutlineCog6Tooth,
   HiOutlineHome,
+  HiOutlineChartBarSquare,
   HiOutlineShieldCheck,
   HiOutlineUserGroup,
 } from "react-icons/hi2";
@@ -58,6 +59,13 @@ export const WORKSPACE_SETTINGS = Object.freeze({
         href: "/manage/company",
         icon: HiOutlineBuildingOffice2,
         permissions: [PERMISSIONS.ORGANIZATION_MANAGE],
+        enabled: true,
+      },
+      {
+        name: "รายงาน",
+        href: "/manage/reports",
+        icon: HiOutlineChartBarSquare,
+        permissions: [PERMISSIONS.LEAVE_REPORT_READ, PERMISSIONS.ORGANIZATION_MANAGE],
         enabled: true,
       },
       {

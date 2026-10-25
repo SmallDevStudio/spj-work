@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   HiOutlineArrowPath,
   HiOutlineCalendarDays,
@@ -32,11 +34,13 @@ function sortedHolidays(holidays) {
 export default function LeaveCalendarSettingsClient({
   initialYear,
   initialItem,
+  allowPublishedEdits = true,
 }) {
-  const [year, setYear] = useState(initialYear);
+  const router = useRouter();
+  const year = initialYear;
   const [item, setItem] = useState(initialItem);
   const [holidays, setHolidays] = useState(
-    sortedHolidays(initialItem?.holidays ?? []),
+    sortedHolidays(initialItem?.pendingDraft?.holidays ?? initialItem?.holidays ?? []),
   );
   const [newHoliday, setNewHoliday] = useState(EMPTY_HOLIDAY);
   const [preview, setPreview] = useState(null);
@@ -47,47 +51,14 @@ export default function LeaveCalendarSettingsClient({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const published = item?.status === "PUBLISHED";
+  // The published calendar remains live; the editor writes a pending revision.
+  const published = item?.status === "PUBLISHED" && !allowPublishedEdits;
   const selectedSet = new Set(selectedDates);
 
   function markChanged() {
     setDirty(true);
     setConfirmedComplete(false);
     setMessage("");
-  }
-
-  async function changeYear(nextYear) {
-    if (busy || nextYear < 2000 || nextYear > 2100) {
-      return;
-    }
-
-    if (
-      dirty &&
-      !window.confirm("ข้อมูลที่ยังไม่บันทึกจะหายไป ต้องการเปลี่ยนปีหรือไม่?")
-    ) {
-      return;
-    }
-
-    setBusy(true);
-    setError("");
-    setMessage("");
-
-    try {
-      const nextItem = await getHolidayCalendarRequest(nextYear);
-
-      setYear(nextYear);
-      setItem(nextItem);
-      setHolidays(sortedHolidays(nextItem?.holidays ?? []));
-      setNewHoliday(EMPTY_HOLIDAY);
-      setPreview(null);
-      setSelectedDates([]);
-      setDirty(false);
-      setConfirmedComplete(false);
-    } catch (requestError) {
-      setError(getHolidayCalendarErrorMessage(requestError));
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function loadGooglePreview() {
@@ -215,12 +186,8 @@ export default function LeaveCalendarSettingsClient({
         })),
       });
 
-      setItem({
-        year,
-        status: "DRAFT",
-        revision: result.revision,
-        holidays,
-      });
+      const savedItem = await getHolidayCalendarRequest(year);
+      setItem(savedItem);
       setDirty(false);
       setConfirmedComplete(false);
       setMessage(`บันทึกฉบับร่าง revision ${result.revision} แล้ว`);
@@ -232,7 +199,7 @@ export default function LeaveCalendarSettingsClient({
   }
 
   async function publish() {
-    if (busy || dirty || !item?.revision || !confirmedComplete) {
+    if (busy || dirty || !(item?.pendingDraft?.revision ?? item?.revision) || !confirmedComplete) {
       return;
     }
 
@@ -243,7 +210,7 @@ export default function LeaveCalendarSettingsClient({
     try {
       await publishHolidayCalendarRequest({
         year,
-        expectedRevision: item.revision,
+        expectedRevision: item.pendingDraft?.revision ?? item.revision,
         confirmedComplete: true,
       });
 
@@ -255,6 +222,8 @@ export default function LeaveCalendarSettingsClient({
       setSelectedDates([]);
       setConfirmedComplete(false);
       setMessage(`เผยแพร่ปฏิทินปี ${year} แล้ว`);
+      router.push("/manage/leave/holidays");
+      router.refresh();
     } catch (requestError) {
       setError(getHolidayCalendarErrorMessage(requestError));
     } finally {
@@ -308,32 +277,17 @@ export default function LeaveCalendarSettingsClient({
               ปี {year} · พ.ศ. {year + 543}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              {published
-                ? "เผยแพร่แล้ว"
+              {item?.pendingDraft
+                ? `มีฉบับแก้ไข revision ${item.pendingDraft.revision} · ฉบับเผยแพร่ยังใช้งานอยู่`
+                : item?.status === "PUBLISHED"
+                ? `เผยแพร่แล้ว revision ${item.revision} · บันทึกเพื่อสร้างฉบับแก้ไข`
                 : item
                   ? `ฉบับร่าง revision ${item.revision}`
                   : "ยังไม่มีฉบับร่าง"}
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => changeYear(year - 1)}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold disabled:opacity-50"
-            >
-              ปีก่อน
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => changeYear(year + 1)}
-              className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold disabled:opacity-50"
-            >
-              ปีถัดไป
-            </button>
-          </div>
+          <Link href="/manage/leave/holidays" className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 text-sm font-semibold">กลับรายการปี</Link>
         </div>
       </section>
 
@@ -541,7 +495,7 @@ export default function LeaveCalendarSettingsClient({
                 type="checkbox"
                 checked={confirmedComplete}
                 disabled={
-                  busy || dirty || !item?.revision || holidays.length === 0
+                  busy || dirty || !(item?.pendingDraft?.revision ?? item?.revision) || holidays.length === 0
                 }
                 onChange={(event) => setConfirmedComplete(event.target.checked)}
                 className="mt-1"
@@ -562,7 +516,7 @@ export default function LeaveCalendarSettingsClient({
                 type="button"
                 onClick={publish}
                 disabled={
-                  busy || dirty || !confirmedComplete || !item?.revision
+                  busy || dirty || !confirmedComplete || !(item?.pendingDraft?.revision ?? item?.revision)
                 }
                 className="min-h-11 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 disabled:opacity-50"
               >
