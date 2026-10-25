@@ -449,7 +449,7 @@ export default function EmployeeLeaveCalendar({
   userId,
   requests,
   coworkers = [],
-  canViewAllDepartments = false,
+  canCreateLeave = true,
   canManageHolidays = false,
 }) {
   const router = useRouter();
@@ -460,6 +460,9 @@ export default function EmployeeLeaveCalendar({
   const [year, setYear] = useState(today.slice(0, 4));
 
   const [teamItems, setTeamItems] = useState(coworkers);
+  const [teamScope, setTeamScope] = useState("DEPARTMENT");
+  const [companyOptions, setCompanyOptions] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [holidays, setHolidays] = useState([]);
   const [holidayYear, setHolidayYear] = useState("");
   const [holidayStatus, setHolidayStatus] = useState("");
@@ -471,7 +474,10 @@ export default function EmployeeLeaveCalendar({
 
   const selectedMonth = selectedDate.slice(0, 7);
   const selectedYear = selectedDate.slice(0, 4);
-  const visibleDepartments = [...new Map(teamItems.filter((item) => item.departmentId).map((item) => [item.departmentId, item.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1], "th"));
+  const visibleTeamItems = selectedCompanyId
+    ? teamItems.filter((item) => item.companyId === selectedCompanyId)
+    : teamItems;
+  const visibleDepartments = [...new Map(visibleTeamItems.filter((item) => item.departmentId).map((item) => [item.departmentId, item.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1], "th"));
   const departmentColors = Object.fromEntries(visibleDepartments.map(([id], index) => [id, departmentPalette[index % departmentPalette.length]]));
   function toggleFilter(key) { setFilters((current) => ({ ...current, [key]: !current[key] })); }
 
@@ -506,6 +512,8 @@ export default function EmployeeLeaveCalendar({
         }
 
         setTeamItems(body.data.items);
+        setTeamScope(body.data.scope ?? "DEPARTMENT");
+        setCompanyOptions(Array.isArray(body.data.companies) ? body.data.companies : []);
         setTeamLoading(false);
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -561,6 +569,7 @@ export default function EmployeeLeaveCalendar({
   }
 
   function startDraftOnDate(date) {
+    if (!canCreateLeave) return;
     router.push(`${leaveNewHref}?date=${encodeURIComponent(date)}`);
   }
 
@@ -577,35 +586,35 @@ export default function EmployeeLeaveCalendar({
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-950 sm:text-3xl">
-            การลาของฉัน
+            {canCreateLeave ? "การลาของฉัน" : "ปฏิทินการลา"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            ตรวจสอบวันลาและประวัติการลาของคุณ
+            {canCreateLeave ? "ตรวจสอบวันลาและประวัติการลาของคุณ" : "ดูวันลาที่อนุมัติแล้วตามบริษัทและแผนก"}
           </p>
         </div>
 
-        <Link
+        {canCreateLeave && <Link
           href={leaveNewHref}
           className="hidden shrink-0 items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-bold text-slate-950 hover:bg-amber-300 sm:inline-flex"
         >
           <HiOutlinePlus className="size-5" aria-hidden="true" />
           เขียนใบลา
-        </Link>
+        </Link>}
       </div>
 
-      <div className="mt-5">
+      {canCreateLeave && <div className="mt-5">
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><h2 className="mb-4 text-lg font-bold text-slate-950">วันลาคงเหลือ</h2><LeaveBalanceStrip onDate={selectedDate} /></section>
-      </div>
+      </div>}
 
       <div
         role="tablist"
         aria-label="มุมมองการลา"
-        className="mt-5 grid grid-cols-3 rounded-2xl bg-slate-100 p-1 sm:max-w-lg"
+        className={`mt-5 grid rounded-2xl bg-slate-100 p-1 sm:max-w-lg ${canCreateLeave ? "grid-cols-3" : "grid-cols-2"}`}
       >
         {[
           ["month", "เดือน"],
           ["day", "วัน"],
-          ["list", "รายการ"],
+          ...(canCreateLeave ? [["list", "รายการ"]] : []),
         ].map(([value, label]) => (
           <button
             key={value}
@@ -671,9 +680,10 @@ export default function EmployeeLeaveCalendar({
       {view !== "list" && <section aria-label="เลือกสิ่งที่แสดงบนปฏิทิน" className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="text-sm font-bold text-slate-900">แสดงบนปฏิทิน</h3>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
-          {[["holidays", "วันหยุดบริษัท", "#ef4444"], ["team", "วันลาเพื่อนร่วมงาน", "#a78bfa"], ["own", "ใบลาของฉัน", "#3b82f6"]].map(([key, label, color]) => <label key={key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={filters[key]} onChange={() => toggleFilter(key)} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: color }} />{label}</label>)}
+          {[["holidays", "วันหยุดบริษัท", "#ef4444"], ["team", "วันลาเพื่อนร่วมงาน", "#a78bfa"], ...(canCreateLeave ? [["own", "ใบลาของฉัน", "#3b82f6"]] : [])].map(([key, label, color]) => <label key={key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={filters[key]} onChange={() => toggleFilter(key)} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: color }} />{label}</label>)}
         </div>
-        {canViewAllDepartments && filters.team && visibleDepartments.length > 0 && <div className="mt-4 border-t border-slate-100 pt-3"><p className="mb-2 text-xs font-semibold text-slate-500">แผนกที่มีวันลาอนุมัติในเดือนนี้</p><div className="flex flex-wrap gap-x-5 gap-y-2">{visibleDepartments.map(([id, name]) => <label key={id} className="flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" checked={filters.departments[id] !== false} onChange={() => setFilters((current) => ({ ...current, departments: { ...current.departments, [id]: current.departments[id] === false } }))} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: departmentColors[id] }} />{name}</label>)}</div></div>}
+        {teamScope !== "DEPARTMENT" && filters.team && companyOptions.length > 1 && <label className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-700">บริษัท<select value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)} className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal"><option value="">ทุกบริษัทที่มีสิทธิ์</option>{companyOptions.map((company) => <option key={company.id} value={company.id}>{company.code} · {company.name}</option>)}</select></label>}
+        {teamScope !== "DEPARTMENT" && filters.team && visibleDepartments.length > 0 && <div className="mt-4 border-t border-slate-100 pt-3"><p className="mb-2 text-xs font-semibold text-slate-500">แผนกที่มีวันลาอนุมัติในเดือนนี้</p><div className="flex flex-wrap gap-x-5 gap-y-2">{visibleDepartments.map(([id, name]) => <label key={id} className="flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" checked={filters.departments[id] !== false} onChange={() => setFilters((current) => ({ ...current, departments: { ...current.departments, [id]: current.departments[id] === false } }))} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: departmentColors[id] }} />{name}</label>)}</div></div>}
         <p className="mt-3 text-xs text-slate-500">ใบลาที่อนุมัติแล้วสีเข้ม · ฉบับร่างและรออนุมัติสีอ่อน · ไม่แสดงใบลาที่ปฏิเสธ</p>
         {filters.holidays && holidayYear === selectedYear && holidayError && <p role="alert" className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{holidayError}</p>}
         {filters.holidays && holidayYear === selectedYear && !holidayError && holidayStatus !== "PUBLISHED" && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">ปฏิทินวันหยุดปี {Number(selectedYear) + 543} ยังไม่เผยแพร่{canManageHolidays ? <> · <Link href="/manage/leave/holidays" className="font-bold underline">ไปจัดการวันหยุด</Link></> : " กรุณาติดต่อ HR"}</p>}
@@ -686,7 +696,7 @@ export default function EmployeeLeaveCalendar({
           onSelectDate={setSelectedDate}
           onDoubleClickDate={startDraftOnDate}
           requests={requests}
-          coworkers={teamItems}
+          coworkers={visibleTeamItems}
           teamLoading={teamLoading}
           holidays={holidayYear === selectedYear ? holidays : []}
           filters={filters}
@@ -697,7 +707,7 @@ export default function EmployeeLeaveCalendar({
         <DayView
           selectedDate={selectedDate}
           requests={requests}
-          coworkers={teamItems}
+          coworkers={visibleTeamItems}
           teamLoading={teamLoading}
           teamError={teamError}
           leaveTypeNames={configuredLeaveTypeNames}
@@ -725,13 +735,13 @@ export default function EmployeeLeaveCalendar({
         </div>
       ) : null}
 
-      <Link
+      {canCreateLeave && <Link
         href={leaveNewHref}
         aria-label="เขียนใบลา"
         className="fixed right-5 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-lg hover:bg-amber-300 sm:hidden"
       >
         <HiOutlinePlus className="size-7" aria-hidden="true" />
-      </Link>
+      </Link>}
     </main>
   );
 }

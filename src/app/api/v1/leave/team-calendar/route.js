@@ -14,12 +14,12 @@ export async function GET(request) {
 
     const month = new URL(request.url).searchParams.get("month");
 
-    const items = await readTeamLeaveCalendar({
+    const calendar = await readTeamLeaveCalendar({
       currentSession,
       month,
     });
 
-    return createSuccessResponse({ items });
+    return createSuccessResponse(calendar);
   } catch (error) {
     return createApiErrorResponse(error, "Team Leave Calendar API");
   }

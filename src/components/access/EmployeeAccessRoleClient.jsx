@@ -11,6 +11,7 @@ const roles = [
   ["APPROVER", "ผู้อนุมัติ"],
   ["HR_OFFICER", "HR Officer"],
   ["HR_ADMIN", "HR Admin"],
+  ["EXECUTIVE", "ผู้บริหาร (ดูปฏิทินทุกบริษัท)"],
   ["IT_OFFICER", "IT Officer"],
   ["IT_ADMIN", "IT Admin"],
   ["ADMIN", "Admin"],

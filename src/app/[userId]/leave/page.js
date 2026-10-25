@@ -27,53 +27,30 @@ export default async function EmployeeLeavePage({ params }) {
   const employeeId = access.membership.employeeId;
 
   if (!employeeId) {
-    if (access.membership.role !== ROLES.SUPERADMIN) {
+    if (
+      [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.HR_ADMIN, ROLES.EXECUTIVE].includes(access.membership.role) &&
+      access.permissions.includes(PERMISSIONS.LEAVE_CALENDAR_READ_ALL)
+    ) {
       return (
-        <main className="mx-auto max-w-3xl px-4 py-8 sm:px-7">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-sky-700 hover:underline"
-          >
-            ← กลับหน้าหลัก
-          </Link>
-
-          <section className="mt-5 rounded-3xl border border-amber-200 bg-white p-6 shadow-sm">
-            <h1 className="text-2xl font-bold text-slate-950">
-              ยังไม่สามารถเปิดข้อมูลการลาได้
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              บัญชีของคุณยังไม่ได้ผูกกับข้อมูลพนักงาน กรุณาติดต่อ HR
-              หรือผู้ดูแลระบบเพื่อตรวจสอบบัญชี
-            </p>
-          </section>
-        </main>
+        <EmployeeLeaveCalendar
+          userId={userId}
+          requests={[]}
+          canCreateLeave={false}
+          canManageHolidays={access.permissions.includes(PERMISSIONS.HOLIDAY_MANAGE)}
+        />
       );
     }
-
     return (
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-7">
-        <Link
-          href="/"
-          className="text-sm font-semibold text-sky-700 hover:underline"
-        >
+        <Link href="/" className="text-sm font-semibold text-sky-700 hover:underline">
           ← กลับหน้าหลัก
         </Link>
-
-        <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-950">
-            บัญชี SUPERADMIN ฉุกเฉิน
-          </h1>
+        <section className="mt-5 rounded-3xl border border-amber-200 bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-bold text-slate-950">ยังไม่สามารถเปิดข้อมูลการลาได้</h1>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            บัญชีนี้ไม่ได้ผูกกับพนักงาน จึงไม่มีวันลาคงเหลือหรือใบลาส่วนตัว
-            คุณยังสามารถจัดการการลาขององค์กรผ่านพื้นที่ Management ได้
+            บัญชีของคุณยังไม่ได้ผูกกับข้อมูลพนักงาน กรุณาติดต่อ HR
+            หรือผู้ดูแลระบบเพื่อตรวจสอบบัญชี
           </p>
-
-          <Link
-            href="/manage/leave/settings"
-            className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-amber-400 px-5 font-semibold text-slate-950 hover:bg-amber-300"
-          >
-            ไปที่จัดการการลา
-          </Link>
         </section>
       </main>
     );
@@ -115,6 +92,6 @@ export default async function EmployeeLeavePage({ params }) {
   });
 
   return (
-    <EmployeeLeaveCalendar userId={userId} requests={requests} coworkers={[]} canViewAllDepartments={access.permissions.includes(PERMISSIONS.LEAVE_READ_ALL)} canManageHolidays={access.permissions.includes(PERMISSIONS.HOLIDAY_MANAGE)} />
+    <EmployeeLeaveCalendar userId={userId} requests={requests} canManageHolidays={access.permissions.includes(PERMISSIONS.HOLIDAY_MANAGE)} />
   );
 }

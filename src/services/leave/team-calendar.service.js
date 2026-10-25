@@ -5,8 +5,10 @@ import { adminFirestore } from "@/lib/firebase/admin";
 import { getEmployeeById } from "@/repositories/employee/employee.repository";
 import { listCompanies } from "@/repositories/company/company.repository";
 import { listDepartments } from "@/repositories/department/organization-structure.repository";
-import { canAccessCompany } from "@/lib/auth/company-access";
+import { ROLES } from "@/constants/roles";
 import { PERMISSIONS } from "@/constants/permissions";
+import { resolveLeaveCalendarVisibility } from "@/modules/leave/calendar-visibility";
+import { listActiveLeaveHrDelegations } from "@/repositories/access/leave-approval-delegation.repository";
 
 const MAX_REQUESTS = 500;
 const MAX_TEAM_MEMBERS = 150;
@@ -44,9 +46,11 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
   const organizationId = currentSession.access.organization.id;
   const employeeId = currentSession.access.membership.employeeId;
   const userId = currentSession.identity.uid;
-  const canViewAll = currentSession.access.permissions.includes(PERMISSIONS.LEAVE_READ_ALL);
+  const role = currentSession.access.membership.role;
+  const globalRole = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.HR_ADMIN, ROLES.EXECUTIVE].includes(role)
+    && currentSession.access.permissions.includes(PERMISSIONS.LEAVE_CALENDAR_READ_ALL);
 
-  if (!employeeId) {
+  if (!employeeId && !globalRole) {
     throw new ApplicationError({
       code: "LEAVE_CALENDAR_EMPLOYEE_REQUIRED",
       message: "บัญชียังไม่ได้ผูกข้อมูลพนักงาน",
@@ -54,29 +58,15 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     });
   }
 
-  const viewer = await getEmployeeById({
-    organizationId,
-    employeeId,
-  });
+  const [viewer, companies, delegations] = await Promise.all([
+    employeeId ? getEmployeeById({ organizationId, employeeId }) : null,
+    listCompanies({ organizationId, limit: 100 }),
+    employeeId && !globalRole ? listActiveLeaveHrDelegations({ organizationId, employeeId }) : [],
+  ]);
 
   if (
-    !viewer ||
-    viewer.isDeleted === true ||
-    viewer.userId !== userId ||
-    !viewer.companyId ||
-    (!viewer.departmentId && !canViewAll)
+    employeeId && (!viewer || viewer.isDeleted === true || viewer.userId !== userId || !viewer.companyId)
   ) {
-    // ยังไม่มีแผนกก็ไม่มีทีมให้แสดง ไม่ขยายขอบเขตไปทั้งบริษัท
-    if (
-      viewer &&
-      viewer.isDeleted !== true &&
-      viewer.userId === userId &&
-      viewer.companyId &&
-      !viewer.departmentId
-    ) {
-      return [];
-    }
-
     throw new ApplicationError({
       code: "LEAVE_CALENDAR_EMPLOYEE_INVALID",
       message: "ข้อมูลพนักงานยังไม่พร้อมแสดงปฏิทินทีม",
@@ -88,11 +78,19 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     .collection("organizations")
     .doc(organizationId);
 
-  const companyIds = canViewAll
-    ? (await listCompanies({ organizationId, limit: 100 }))
-        .filter((company) => canAccessCompany(currentSession.access.membership.companyAccess, company.id))
-        .map((company) => company.id)
-    : [viewer.companyId];
+  const visibility = resolveLeaveCalendarVisibility({
+    role,
+    permissions: currentSession.access.permissions,
+    companyAccess: currentSession.access.membership.companyAccess,
+    ownCompanyId: viewer?.companyId,
+    departmentId: viewer?.departmentId,
+    delegatedCompanyIds: delegations.map((item) => item.companyId),
+    companies,
+  });
+  const companyIds = visibility.companyIds;
+  if (visibility.scope === "DEPARTMENT" && !visibility.departmentId) {
+    return { items: [], scope: "DEPARTMENT", companies: [] };
+  }
   const snapshots = await Promise.all(companyIds.map((companyId) => organizationRef
     .collection("leaveRequests")
     .where("companyId", "==", companyId)
@@ -118,7 +116,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     .filter(
       (request) =>
         request.isDeleted !== true &&
-        request.employeeId !== employeeId &&
+        (!employeeId || request.employeeId !== employeeId) &&
         companyIds.includes(request.companyId) &&
         request.status === "APPROVED",
     );
@@ -148,7 +146,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
           { fieldMask: ["firstName", "companyId", "departmentId", "isDeleted"] },
         )
       : [],
-    canViewAll ? listDepartments({ organizationId, limit: 100 }) : [],
+    visibility.scope !== "DEPARTMENT" ? listDepartments({ organizationId, limit: 100 }) : [],
   ]);
 
   const visibleEmployees = new Map(
@@ -160,7 +158,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
           employee.exists &&
           data?.isDeleted !== true &&
           companyIds.includes(data?.companyId) &&
-          (canViewAll ? Boolean(data?.departmentId) : data?.departmentId === viewer.departmentId)
+          (visibility.scope !== "DEPARTMENT" || (Boolean(visibility.departmentId) && data?.departmentId === visibility.departmentId))
         );
       })
       .map((employee) => {
@@ -171,7 +169,8 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
           {
             firstName:
               typeof data.firstName === "string" ? data.firstName.trim() : "",
-          departmentId: data.departmentId,
+            departmentId: data.departmentId ?? null,
+            companyId: data.companyId,
           },
         ];
       }),
@@ -179,7 +178,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
 
   const departmentNames = new Map(departments.map((department) => [department.id, department.nameTh]));
 
-  return requests.flatMap((request) => {
+  const items = requests.flatMap((request) => {
     const colleague = visibleEmployees.get(request.employeeId);
 
     if (
@@ -197,8 +196,19 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
         name: colleague.firstName,
         startDate: request.startDate,
         endDate: request.endDate,
-        ...(canViewAll ? { departmentId: colleague.departmentId, departmentName: departmentNames.get(colleague.departmentId) ?? "แผนก" } : {}),
+        ...(visibility.scope !== "DEPARTMENT" ? {
+          companyId: colleague.companyId,
+          departmentId: colleague.departmentId ?? "UNASSIGNED",
+          departmentName: departmentNames.get(colleague.departmentId) ?? "ไม่ระบุแผนก",
+        } : {}),
       },
     ];
   });
+  return {
+    items,
+    scope: visibility.scope,
+    companies: visibility.scope === "DEPARTMENT" ? [] : companies
+      .filter((company) => companyIds.includes(company.id))
+      .map((company) => ({ id: company.id, name: company.nameTh, code: company.code })),
+  };
 }
