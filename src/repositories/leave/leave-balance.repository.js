@@ -17,6 +17,8 @@ export async function getEmployeeLeaveBalance({
   leaveTypeCode,
   onDate,
   resetMonthDay = "01-01",
+  sourceSnapshots,
+  requestSnapshot,
 }) {
   const source = await getLeaveEntitlementSource({
     organizationId,
@@ -24,6 +26,7 @@ export async function getEmployeeLeaveBalance({
     leaveTypeCode,
     onDate,
     resetMonthDay,
+    sourceSnapshots,
   });
 
   if (source.source === "NOT_CONFIGURED") {
@@ -37,11 +40,13 @@ export async function getEmployeeLeaveBalance({
     };
   }
 
-  const snapshot = await adminFirestore
+  const snapshot = requestSnapshot ?? await adminFirestore
     .collection("organizations")
     .doc(organizationId)
     .collection("leaveRequests")
     .where("employeeId", "==", employeeId)
+    .where("startDate", ">=", source.periodStart)
+    .where("startDate", "<=", source.periodEnd)
     .limit(MAX_REQUESTS + 1)
     .get();
 
@@ -95,4 +100,30 @@ export async function getEmployeeLeaveBalance({
         ? null
         : availableDays - approvedDays - pendingDays,
   };
+}
+
+export async function getEmployeeLeaveBalances({ organizationId, employeeId, onDate, leaveTypeCodes }) {
+  const organizationRef = adminFirestore.collection("organizations").doc(organizationId);
+  const employeeRef = organizationRef.collection("employees").doc(employeeId);
+  const sourceSnapshotsPromise = Promise.all([
+    employeeRef.get(),
+    employeeRef.collection("leaveLedgerEntries").limit(501).get(),
+    employeeRef.collection("leaveTemplateAssignments").limit(101).get(),
+    employeeRef.collection("leaveEntitlementOverrides").limit(101).get(),
+  ]);
+  // ใช้รอบปีเดียวกับ getLeaveEntitlementSource โดยค่า reset 1 มกราคม
+  const year = onDate.slice(0, 4);
+  const requestsPromise = organizationRef.collection("leaveRequests")
+    .where("employeeId", "==", employeeId)
+    .where("startDate", ">=", `${year}-01-01`)
+    .where("startDate", "<=", `${year}-12-31`)
+    .limit(MAX_REQUESTS + 1)
+    .get();
+  const [sourceSnapshots, requestSnapshot] = await Promise.all([sourceSnapshotsPromise, requestsPromise]);
+
+  const entries = await Promise.all(leaveTypeCodes.map(async (leaveTypeCode) => [
+    leaveTypeCode,
+    await getEmployeeLeaveBalance({ organizationId, employeeId, leaveTypeCode, onDate, sourceSnapshots, requestSnapshot }),
+  ]));
+  return Object.fromEntries(entries);
 }

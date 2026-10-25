@@ -18,20 +18,22 @@ function todayInBangkok() {
 export default function LeaveBalanceStrip({ enabled = true, onDate, compact = false }) {
   const [balances, setBalances] = useState({});
   const [loading, setLoading] = useState(enabled);
+  const [resolvedDate, setResolvedDate] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!enabled) return undefined;
     const controller = new AbortController();
     const date = onDate ?? todayInBangkok();
-    Promise.all(cards.map(async ({ code }) => {
-      const response = await fetch(`/api/v1/leave/balance?${new URLSearchParams({ leaveTypeCode: code, onDate: date })}`, { signal: controller.signal, credentials: "same-origin", cache: "no-store" });
+    async function loadBalances() {
+      const response = await fetch(`/api/v1/leave/balances?${new URLSearchParams({ onDate: date })}`, { signal: controller.signal, credentials: "same-origin", cache: "no-store" });
       const body = await response.json();
       if (!response.ok || !body.success) throw new Error(body.error?.message ?? "โหลดวันลาคงเหลือไม่สำเร็จ");
-      return [code, body.data.item];
-    })).then((entries) => { if (!controller.signal.aborted) { setBalances(Object.fromEntries(entries)); setError(""); } })
+      return body.data.items;
+    }
+    loadBalances().then((items) => { if (!controller.signal.aborted) { setBalances(items); setError(""); } })
       .catch((cause) => { if (!controller.signal.aborted) setError(cause.message); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .finally(() => { if (!controller.signal.aborted) { setResolvedDate(date); setLoading(false); } });
     return () => controller.abort();
   }, [enabled, onDate]);
 
@@ -39,7 +41,7 @@ export default function LeaveBalanceStrip({ enabled = true, onDate, compact = fa
     <div className={`grid grid-cols-3 ${compact ? "gap-2" : "gap-2 sm:gap-3"}`}>
       {cards.map(({ code, label, Icon, color }) => {
         const balance = balances[code];
-        const value = !enabled ? "—" : loading ? "…" : balance?.source === "NOT_CONFIGURED" ? "—" : balance?.remainingDays == null ? balance ? "ไม่จำกัด" : "—" : `${balance.remainingDays} วัน`;
+        const value = !enabled ? "—" : loading || resolvedDate !== (onDate ?? todayInBangkok()) ? "…" : balance?.source === "NOT_CONFIGURED" ? "—" : balance?.remainingDays == null ? balance ? "ไม่จำกัด" : "—" : `${balance.remainingDays} วัน`;
         return <div key={code} className={`min-w-0 rounded-2xl p-3 sm:p-4 ${color}`}>
           <span className="flex size-9 items-center justify-center rounded-full bg-white/80"><Icon className="size-5" aria-hidden="true" /></span>
           <p className="mt-2 text-xs font-bold sm:text-sm">{label}</p>
@@ -47,7 +49,7 @@ export default function LeaveBalanceStrip({ enabled = true, onDate, compact = fa
         </div>;
       })}
     </div>
-    {error && <p role="alert" className="mt-2 text-xs text-rose-700">{error}</p>}
+    {error && resolvedDate === (onDate ?? todayInBangkok()) && <p role="alert" className="mt-2 text-xs text-rose-700">{error}</p>}
     {!enabled && <p className="mt-2 text-xs text-slate-500">เชื่อมบัญชีกับข้อมูลพนักงานเพื่อดูวันลาคงเหลือ</p>}
   </div>;
 }

@@ -24,6 +24,7 @@ export async function getLeaveEntitlementSource({
   leaveTypeCode,
   onDate,
   resetMonthDay = "01-01",
+  sourceSnapshots,
 }) {
   const cycle = getLeaveCycleForDate({
     date: onDate,
@@ -41,7 +42,7 @@ export async function getLeaveEntitlementSource({
     ledgerSnapshot,
     assignmentSnapshot,
     overrideSnapshot,
-  ] = await Promise.all([
+  ] = sourceSnapshots ?? await Promise.all([
     employeeRef.get(),
     employeeRef.collection("leaveLedgerEntries").limit(501).get(),
     employeeRef.collection("leaveTemplateAssignments").limit(101).get(),

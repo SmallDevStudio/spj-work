@@ -141,11 +141,15 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     });
   }
 
-  const employeeSnapshots = await Promise.all(
-    teamEmployeeIds.map((id) =>
-      organizationRef.collection("employees").doc(id).get(),
-    ),
-  );
+  const [employeeSnapshots, departments] = await Promise.all([
+    teamEmployeeIds.length
+      ? adminFirestore.getAll(
+          ...teamEmployeeIds.map((id) => organizationRef.collection("employees").doc(id)),
+          { fieldMask: ["firstName", "companyId", "departmentId", "isDeleted"] },
+        )
+      : [],
+    canViewAll ? listDepartments({ organizationId, limit: 100 }) : [],
+  ]);
 
   const visibleEmployees = new Map(
     employeeSnapshots
@@ -173,7 +177,6 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
       }),
   );
 
-  const departments = canViewAll ? await listDepartments({ organizationId, limit: 100 }) : [];
   const departmentNames = new Map(departments.map((department) => [department.id, department.nameTh]));
 
   return requests.flatMap((request) => {
