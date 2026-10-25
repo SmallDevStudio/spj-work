@@ -450,6 +450,7 @@ export default function EmployeeLeaveCalendar({
   requests,
   coworkers = [],
   canViewAllDepartments = false,
+  canManageHolidays = false,
 }) {
   const router = useRouter();
   const leaveNewHref = getUserRoutes(userId).LEAVE_NEW;
@@ -460,6 +461,9 @@ export default function EmployeeLeaveCalendar({
 
   const [teamItems, setTeamItems] = useState(coworkers);
   const [holidays, setHolidays] = useState([]);
+  const [holidayYear, setHolidayYear] = useState("");
+  const [holidayStatus, setHolidayStatus] = useState("");
+  const [holidayError, setHolidayError] = useState("");
   const [filters, setFilters] = useState({ holidays: true, team: true, own: true, departments: {} });
   const [teamError, setTeamError] = useState("");
   const [teamLoading, setTeamLoading] = useState(true);
@@ -521,9 +525,16 @@ export default function EmployeeLeaveCalendar({
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/v1/leave/holidays?year=${selectedYear}`, { signal: controller.signal, credentials: "same-origin" })
-      .then((response) => response.json()).then((body) => { if (!controller.signal.aborted) setHolidays(body.data?.items ?? []); })
-      .catch(() => { if (!controller.signal.aborted) setHolidays([]); });
+    fetch(`/api/v1/leave/holidays?year=${selectedYear}`, { signal: controller.signal, credentials: "same-origin", cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok || body.success !== true || !Array.isArray(body.data?.items)) {
+          throw new Error(body.error?.message ?? "โหลดวันหยุดบริษัทไม่สำเร็จ");
+        }
+        return body.data;
+      })
+      .then((data) => { if (!controller.signal.aborted) { setHolidays(data.items); setHolidayStatus(data.status); setHolidayYear(selectedYear); setHolidayError(""); } })
+      .catch((error) => { if (!controller.signal.aborted) { setHolidays([]); setHolidayStatus(""); setHolidayYear(selectedYear); setHolidayError(error.message); } });
     return () => controller.abort();
   }, [selectedYear]);
 
@@ -664,6 +675,9 @@ export default function EmployeeLeaveCalendar({
         </div>
         {canViewAllDepartments && filters.team && visibleDepartments.length > 0 && <div className="mt-4 border-t border-slate-100 pt-3"><p className="mb-2 text-xs font-semibold text-slate-500">แผนกที่มีวันลาอนุมัติในเดือนนี้</p><div className="flex flex-wrap gap-x-5 gap-y-2">{visibleDepartments.map(([id, name]) => <label key={id} className="flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" checked={filters.departments[id] !== false} onChange={() => setFilters((current) => ({ ...current, departments: { ...current.departments, [id]: current.departments[id] === false } }))} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: departmentColors[id] }} />{name}</label>)}</div></div>}
         <p className="mt-3 text-xs text-slate-500">ใบลาที่อนุมัติแล้วสีเข้ม · ฉบับร่างและรออนุมัติสีอ่อน · ไม่แสดงใบลาที่ปฏิเสธ</p>
+        {filters.holidays && holidayYear === selectedYear && holidayError && <p role="alert" className="mt-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{holidayError}</p>}
+        {filters.holidays && holidayYear === selectedYear && !holidayError && holidayStatus !== "PUBLISHED" && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">ปฏิทินวันหยุดปี {Number(selectedYear) + 543} ยังไม่เผยแพร่{canManageHolidays ? <> · <Link href="/manage/leave/holidays" className="font-bold underline">ไปจัดการวันหยุด</Link></> : " กรุณาติดต่อ HR"}</p>}
+        {filters.holidays && holidayYear === selectedYear && holidayStatus === "PUBLISHED" && holidays.length === 0 && <p role="status" className="mt-3 text-sm text-slate-500">ปีนี้ไม่มีรายการวันหยุดบริษัท</p>}
       </section>}
 
       {view === "month" ? (
@@ -674,7 +688,7 @@ export default function EmployeeLeaveCalendar({
           requests={requests}
           coworkers={teamItems}
           teamLoading={teamLoading}
-          holidays={holidays}
+          holidays={holidayYear === selectedYear ? holidays : []}
           filters={filters}
           leaveTypeNames={configuredLeaveTypeNames}
           departmentColors={departmentColors}
@@ -687,7 +701,7 @@ export default function EmployeeLeaveCalendar({
           teamLoading={teamLoading}
           teamError={teamError}
           leaveTypeNames={configuredLeaveTypeNames}
-          holidays={holidays}
+          holidays={holidayYear === selectedYear ? holidays : []}
           filters={filters}
           departmentColors={departmentColors}
         />

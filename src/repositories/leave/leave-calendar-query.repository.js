@@ -32,6 +32,7 @@ export async function getLeaveCalendarYear({ organizationId, year }) {
     revision: data.revision,
     workingWeekdays: data.workingWeekdays ?? [],
     holidays: data.holidays ?? [],
+    holidayDates: data.holidayDates ?? [],
     publishedAt: toIsoString(data.publishedAt),
     publishedBy: data.publishedBy ?? null,
     updatedAt: toIsoString(data.updatedAt),
