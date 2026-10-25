@@ -5,6 +5,7 @@ export default function PortalHero({
   departmentName,
   managerName,
   fallbackName,
+  userId,
 }) {
   const firstName = (employee?.firstName || fallbackName || "คุณ")
     .trim()
@@ -47,6 +48,7 @@ export default function PortalHero({
             departmentName={departmentName}
             managerName={managerName}
             fallbackName={fallbackName}
+            userId={userId}
           />
         </div>
       </div>

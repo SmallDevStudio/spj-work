@@ -70,6 +70,7 @@ export default async function HomePage() {
             departmentName={department?.nameTh ?? null}
             managerName={manager?.displayName ?? null}
             fallbackName={identity.name ?? identity.email}
+            userId={identity.uid}
           />
 
           <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-7 xl:px-12">

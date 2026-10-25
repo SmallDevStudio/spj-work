@@ -189,6 +189,7 @@ export default function LeaveDraftForm({ leaveTypes, initialDate, leaveHref }) {
           </label>
           <textarea
             id="leave-reason"
+            required={form.leaveTypeCode === "OTHER"}
             rows={4}
             maxLength={2000}
             value={form.reason}
@@ -197,7 +198,7 @@ export default function LeaveDraftForm({ leaveTypes, initialDate, leaveHref }) {
             className="mt-2 w-full rounded-xl border border-slate-300 p-3"
           />
           <p className="mt-1 text-xs text-slate-500">
-            รายละเอียดนี้ไม่แสดงต่อเพื่อนร่วมงานใน Calendar
+            {form.leaveTypeCode === "OTHER" ? "การลาอื่น ๆ ต้องระบุรายละเอียด · " : ""}รายละเอียดนี้ไม่แสดงต่อเพื่อนร่วมงานใน Calendar
           </p>
         </div>
 

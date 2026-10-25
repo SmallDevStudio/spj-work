@@ -3,6 +3,10 @@ import "server-only";
 import { ApplicationError } from "@/lib/errors/application-error";
 import { adminFirestore } from "@/lib/firebase/admin";
 import { getEmployeeById } from "@/repositories/employee/employee.repository";
+import { listCompanies } from "@/repositories/company/company.repository";
+import { listDepartments } from "@/repositories/department/organization-structure.repository";
+import { canAccessCompany } from "@/lib/auth/company-access";
+import { PERMISSIONS } from "@/constants/permissions";
 
 const MAX_REQUESTS = 500;
 const MAX_TEAM_MEMBERS = 150;
@@ -40,6 +44,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
   const organizationId = currentSession.access.organization.id;
   const employeeId = currentSession.access.membership.employeeId;
   const userId = currentSession.identity.uid;
+  const canViewAll = currentSession.access.permissions.includes(PERMISSIONS.LEAVE_READ_ALL);
 
   if (!employeeId) {
     throw new ApplicationError({
@@ -59,7 +64,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     viewer.isDeleted === true ||
     viewer.userId !== userId ||
     !viewer.companyId ||
-    !viewer.departmentId
+    (!viewer.departmentId && !canViewAll)
   ) {
     // ยังไม่มีแผนกก็ไม่มีทีมให้แสดง ไม่ขยายขอบเขตไปทั้งบริษัท
     if (
@@ -83,16 +88,21 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     .collection("organizations")
     .doc(organizationId);
 
-  const snapshot = await organizationRef
+  const companyIds = canViewAll
+    ? (await listCompanies({ organizationId, limit: 100 }))
+        .filter((company) => canAccessCompany(currentSession.access.membership.companyAccess, company.id))
+        .map((company) => company.id)
+    : [viewer.companyId];
+  const snapshots = await Promise.all(companyIds.map((companyId) => organizationRef
     .collection("leaveRequests")
-    .where("companyId", "==", viewer.companyId)
+    .where("companyId", "==", companyId)
     .where("status", "==", "APPROVED")
     .where("endDate", ">=", startDate)
     .where("startDate", "<=", endDate)
     .limit(MAX_REQUESTS + 1)
-    .get();
+    .get()));
 
-  if (snapshot.size > MAX_REQUESTS) {
+  if (snapshots.reduce((total, snapshot) => total + snapshot.size, 0) > MAX_REQUESTS) {
     throw new ApplicationError({
       code: "LEAVE_CALENDAR_TOO_MANY_REQUESTS",
       message: "รายการในช่วงเดือนนี้มีจำนวนมาก กรุณาติดต่อผู้ดูแลระบบ",
@@ -100,7 +110,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     });
   }
 
-  const requests = snapshot.docs
+  const requests = snapshots.flatMap((snapshot) => snapshot.docs)
     .map((document) => ({
       id: document.id,
       ...document.data(),
@@ -109,7 +119,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
       (request) =>
         request.isDeleted !== true &&
         request.employeeId !== employeeId &&
-        request.companyId === viewer.companyId &&
+        companyIds.includes(request.companyId) &&
         request.status === "APPROVED",
     );
 
@@ -145,8 +155,8 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
         return (
           employee.exists &&
           data?.isDeleted !== true &&
-          data?.companyId === viewer.companyId &&
-          data?.departmentId === viewer.departmentId
+          companyIds.includes(data?.companyId) &&
+          (canViewAll ? Boolean(data?.departmentId) : data?.departmentId === viewer.departmentId)
         );
       })
       .map((employee) => {
@@ -157,10 +167,14 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
           {
             firstName:
               typeof data.firstName === "string" ? data.firstName.trim() : "",
+          departmentId: data.departmentId,
           },
         ];
       }),
   );
+
+  const departments = canViewAll ? await listDepartments({ organizationId, limit: 100 }) : [];
+  const departmentNames = new Map(departments.map((department) => [department.id, department.nameTh]));
 
   return requests.flatMap((request) => {
     const colleague = visibleEmployees.get(request.employeeId);
@@ -168,9 +182,7 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     if (
       !colleague?.firstName ||
       typeof request.startDate !== "string" ||
-      typeof request.endDate !== "string" ||
-      typeof request.requestedDays !== "number" ||
-      !Number.isFinite(request.requestedDays)
+      typeof request.endDate !== "string"
     ) {
       return [];
     }
@@ -179,11 +191,10 @@ export async function readTeamLeaveCalendar({ currentSession, month }) {
     // ลงในผลลัพธ์นี้
     return [
       {
-        id: request.id,
         name: colleague.firstName,
         startDate: request.startDate,
         endDate: request.endDate,
-        days: request.requestedDays,
+        ...(canViewAll ? { departmentId: colleague.departmentId, departmentName: departmentNames.get(colleague.departmentId) ?? "แผนก" } : {}),
       },
     ];
   });

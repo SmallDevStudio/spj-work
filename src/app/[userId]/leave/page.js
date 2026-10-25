@@ -115,6 +115,6 @@ export default async function EmployeeLeavePage({ params }) {
   });
 
   return (
-    <EmployeeLeaveCalendar userId={userId} requests={requests} coworkers={[]} />
+    <EmployeeLeaveCalendar userId={userId} requests={requests} coworkers={[]} canViewAllDepartments={access.permissions.includes(PERMISSIONS.LEAVE_READ_ALL)} />
   );
 }

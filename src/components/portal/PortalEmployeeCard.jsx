@@ -1,32 +1,7 @@
-import {
-  HiOutlineCalendarDays,
-  HiOutlineClipboardDocumentList,
-  HiOutlineHeart,
-  HiOutlineSun,
-  HiOutlineUser,
-  HiOutlineUserCircle,
-} from "react-icons/hi2";
-
-const leaveTypes = [
-  {
-    label: "ลาพักร้อน",
-    icon: HiOutlineSun,
-    color: "bg-amber-50 text-amber-700",
-    iconColor: "bg-white/80 text-amber-600",
-  },
-  {
-    label: "ลาป่วย",
-    icon: HiOutlineHeart,
-    color: "bg-sky-50 text-sky-700",
-    iconColor: "bg-white/80 text-sky-600",
-  },
-  {
-    label: "ลากิจ",
-    icon: HiOutlineUser,
-    color: "bg-emerald-50 text-emerald-700",
-    iconColor: "bg-white/80 text-emerald-600",
-  },
-];
+import Link from "next/link";
+import { HiOutlineCalendarDays, HiOutlineClipboardDocumentList, HiOutlineUserCircle } from "react-icons/hi2";
+import LeaveBalanceStrip from "@/components/leave/LeaveBalanceStrip";
+import { getUserRoutes } from "@/constants/user-routes";
 
 function EmployeeDetail({ label, value }) {
   return (
@@ -39,28 +14,12 @@ function EmployeeDetail({ label, value }) {
   );
 }
 
-function LeaveTypeCard({ item }) {
-  const Icon = item.icon;
-
-  return (
-    <div className={`min-w-0 rounded-2xl p-3 sm:p-4 ${item.color}`}>
-      <span
-        className={`flex size-9 items-center justify-center rounded-full sm:size-11 ${item.iconColor}`}
-      >
-        <Icon className="size-5 sm:size-6" aria-hidden="true" />
-      </span>
-
-      <p className="mt-2 text-xs font-bold sm:text-sm">{item.label}</p>
-      <p className="mt-1 text-[11px] leading-4 sm:text-xs">รอตั้งค่าสิทธิ์</p>
-    </div>
-  );
-}
-
 export default function PortalEmployeeCard({
   employee,
   departmentName,
   managerName,
   fallbackName,
+  userId,
 }) {
   const name = employee?.displayName || fallbackName || "ผู้ใช้งาน SPJ Work";
   const initial = name.trim().charAt(0).toUpperCase();
@@ -133,22 +92,18 @@ export default function PortalEmployeeCard({
             วันลาคงเหลือ
           </h2>
 
-          <span className="text-xs text-slate-500">รอเปิดระบบลา</span>
+          <span className="text-xs text-slate-500">ปี {new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", year: "numeric" }).format(new Date())}</span>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-          {leaveTypes.map((item) => (
-            <LeaveTypeCard key={item.label} item={item} />
-          ))}
-        </div>
+        <div className="mt-4"><LeaveBalanceStrip enabled={Boolean(employee && employee.userId === userId)} compact /></div>
 
-        <div className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-amber-400/60 px-4 text-sm font-bold text-slate-700 sm:text-base">
+        <Link href={employee && employee.userId === userId ? getUserRoutes(userId).LEAVE : "#portal-leave-heading"} className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 sm:text-base">
           <HiOutlineClipboardDocumentList
             className="size-5"
             aria-hidden="true"
           />
-          เขียนใบลา — กำลังเตรียม
-        </div>
+          {employee && employee.userId === userId ? "เขียนใบลา" : "เชื่อมข้อมูลพนักงานเพื่อเขียนใบลา"}
+        </Link>
       </section>
     </div>
   );

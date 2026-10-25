@@ -11,6 +11,7 @@ import {
   HiOutlinePlus,
 } from "react-icons/hi2";
 import { getUserRoutes } from "@/constants/user-routes";
+import LeaveBalanceStrip from "@/components/leave/LeaveBalanceStrip";
 
 const thaiDate = new Intl.DateTimeFormat("th-TH", {
   timeZone: "Asia/Bangkok",
@@ -34,6 +35,7 @@ const thaiDay = new Intl.DateTimeFormat("th-TH", {
 });
 
 const weekdayNames = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+const departmentPalette = ["#a78bfa", "#2dd4bf", "#fb923c", "#f472b6", "#60a5fa", "#a3e635", "#facc15", "#38bdf8", "#c084fc", "#4ade80", "#f87171", "#818cf8", "#fbbf24", "#34d399", "#e879f9", "#22d3ee", "#fb7185", "#bef264", "#93c5fd", "#fdba74", "#86efac", "#d8b4fe", "#fda4af", "#67e8f9"];
 
 const statusLabels = {
   DRAFT: "ฉบับร่าง",
@@ -114,230 +116,17 @@ function calendarClass(status) {
     : "bg-slate-100 text-slate-600";
 }
 
-function LeaveBalanceCard({ onDate, onTypesLoaded }) {
-  const [leaveTypeCode, setLeaveTypeCode] = useState("SICK");
-  const [balance, setBalance] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [availableTypes, setAvailableTypes] = useState([]);
-  const [typesLoading, setTypesLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadTypes() {
-      try {
-        const response = await fetch("/api/v1/leave/available-types", {
-          credentials: "same-origin",
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        const body = await response.json();
-
-        if (!response.ok || body.success !== true) {
-          throw new Error(body.error?.message ?? "โหลดประเภทการลาไม่สำเร็จ");
-        }
-
-        const items = body.data?.items ?? [];
-
-        if (!Array.isArray(items)) {
-          throw new Error("ข้อมูลประเภทการลาไม่ถูกต้อง");
-        }
-
-        setAvailableTypes(items);
-        onTypesLoaded(
-          Object.fromEntries(items.map((item) => [item.code, item.nameTh])),
-        );
-        setLeaveTypeCode((current) =>
-          items.some((item) => item.code === current)
-            ? current
-            : (items[0]?.code ?? ""),
-        );
-      } catch (requestError) {
-        if (requestError.name !== "AbortError") {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "โหลดประเภทการลาไม่สำเร็จ",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setTypesLoading(false);
-        }
-      }
-    }
-
-    loadTypes();
-    return () => controller.abort();
-  }, [onTypesLoaded]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadBalance() {
-      if (!leaveTypeCode || typesLoading) {
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-      setBalance(null);
-
-      try {
-        const params = new URLSearchParams({
-          leaveTypeCode,
-          onDate,
-        });
-
-        const response = await fetch(
-          `/api/v1/leave/balance?${params.toString()}`,
-          {
-            credentials: "same-origin",
-            cache: "no-store",
-            signal: controller.signal,
-          },
-        );
-
-        const body = await response.json();
-
-        if (!response.ok || body.success !== true || !body.data?.item) {
-          throw new Error(
-            body.error?.message ?? "ไม่สามารถโหลดวันลาคงเหลือได้",
-          );
-        }
-
-        setBalance(body.data.item);
-      } catch (requestError) {
-        if (requestError.name !== "AbortError") {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "ไม่สามารถโหลดวันลาคงเหลือได้",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadBalance();
-
-    return () => controller.abort();
-  }, [leaveTypeCode, onDate, typesLoading]);
-
-  const notConfigured = balance?.source === "NOT_CONFIGURED";
-
-  const remainingLabel =
-    balance?.remainingDays === null
-      ? "ไม่จำกัด"
-      : `${balance?.remainingDays ?? 0} วัน`;
-
-  return (
-    <section
-      aria-labelledby="leave-balance-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2
-            id="leave-balance-heading"
-            className="text-base font-bold text-slate-950 sm:text-lg"
-          >
-            วันลาคงเหลือ
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            ตรวจยอดตามรอบปีของวันที่เลือกในปฏิทิน
-          </p>
-        </div>
-
-        <label className="text-sm font-semibold text-slate-700">
-          <span className="sr-only">ประเภทการลา</span>
-          <select
-            value={leaveTypeCode}
-            onChange={(event) => setLeaveTypeCode(event.target.value)}
-            disabled={typesLoading || availableTypes.length === 0}
-            className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-60 sm:w-56"
-          >
-            {availableTypes.length === 0 ? (
-              <option value="">
-                {typesLoading ? "กำลังโหลดประเภทการลา" : "ไม่มีประเภทการลา"}
-              </option>
-            ) : (
-              availableTypes.map((type) => (
-                <option key={type.code} value={type.code}>
-                  {type.nameTh}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
-      </div>
-
-      {loading ? (
-        <p role="status" className="mt-5 text-sm text-slate-500">
-          กำลังตรวจสอบยอดวันลา...
-        </p>
-      ) : error ? (
-        <p
-          role="alert"
-          className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700"
-        >
-          {error}
-        </p>
-      ) : notConfigured ? (
-        <p className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
-          ยังไม่ได้กำหนดสิทธิการลาประเภทนี้ กรุณาติดต่อ HR
-        </p>
-      ) : balance ? (
-        <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-sky-50 p-4">
-              <p className="text-xs font-semibold text-sky-700">คงเหลือ</p>
-              <p className="mt-1 text-3xl font-black text-sky-900">
-                {remainingLabel}
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold text-slate-600">
-                ใช้แล้ว (อนุมัติ)
-              </p>
-              <p className="mt-1 text-xl font-bold text-slate-900">
-                {balance.approvedDays} วัน
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-amber-50 p-4">
-              <p className="text-xs font-semibold text-amber-700">รออนุมัติ</p>
-              <p className="mt-1 text-xl font-bold text-amber-900">
-                {balance.pendingDays} วัน
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-3 text-xs text-slate-500">
-            รอบปี {balance.periodStart} ถึง {balance.periodEnd}
-            {balance.pendingDays > 0 &&
-            balance.remainingAfterPendingDays !== null
-              ? ` · หากอนุมัติรายการที่รอทั้งหมด จะเหลือ ${balance.remainingAfterPendingDays} วัน`
-              : ""}
-          </p>
-        </>
-      ) : null}
-    </section>
-  );
-}
-
 function MonthView({
   selectedDate,
   onSelectDate,
   requests,
   coworkers,
   teamLoading,
+  onDoubleClickDate,
+  holidays,
+  filters,
+  leaveTypeNames,
+  departmentColors,
 }) {
   const monthStart = new Date(
     Date.UTC(
@@ -377,7 +166,8 @@ function MonthView({
 
           const isSelected = date === selectedDate;
 
-          const ownEvents = inMonth
+          const holiday = inMonth && filters.holidays ? holidays.find((item) => item.date === date) : null;
+          const ownEvents = inMonth && filters.own
             ? requests.filter(
                 (item) =>
                   !["REJECTED", "CANCELLED"].includes(item.status) &&
@@ -386,10 +176,10 @@ function MonthView({
               )
             : [];
 
-          // API ส่งเฉพาะ id, name, startDate, endDate, days
-          const colleagueEvents = inMonth
+          // API ส่งชื่อและช่วงวันที่เท่านั้น (เพิ่มรหัส/ชื่อแผนกเฉพาะผู้มีสิทธิ์ดูทุกแผนก)
+          const colleagueEvents = inMonth && filters.team
             ? coworkers.filter(
-                (item) => item.startDate <= date && item.endDate >= date,
+                (item) => item.startDate <= date && item.endDate >= date && (!item.departmentId || filters.departments[item.departmentId] !== false),
               )
             : [];
 
@@ -420,13 +210,14 @@ function MonthView({
               }`}
               aria-pressed={isSelected}
               className={`min-h-20 min-w-0 border-r border-b border-slate-100 p-1 text-left transition hover:bg-amber-50 sm:min-h-28 sm:p-2 lg:min-h-32 ${
-                inMonth ? "bg-white" : "bg-slate-50 text-slate-400"
+                inMonth ? holiday ? "bg-rose-50" : "bg-white" : "bg-slate-50 text-slate-400"
               } ${isSelected ? "ring-2 ring-inset ring-amber-400" : ""}`}
             >
               <span className="text-xs font-semibold sm:text-sm">
                 {Number(date.slice(8, 10))}
               </span>
 
+              {holiday && <span className="mt-1 block truncate rounded bg-rose-100 px-1 text-[10px] text-rose-800 sm:text-xs" title={holiday.nameTh}>{holiday.nameTh}</span>}
               <span className="mt-1 block space-y-1">
                 {visibleOwn.map((item) => (
                   <span
@@ -435,17 +226,18 @@ function MonthView({
                       item.status,
                     )}`}
                   >
-                    ของฉัน · {statusLabels[item.status] ?? item.status}
+                    {leaveTypeNames[item.leaveTypeCode] ?? leaveTypeLabels[item.leaveTypeCode] ?? "ใบลา"} ({statusLabels[item.status] ?? item.status})
                   </span>
                 ))}
 
-                {visibleColleagues.map((item) => (
+                {visibleColleagues.map((item, index) => (
                   <span
-                    key={`team-${item.id}`}
-                    className="block truncate rounded bg-amber-50 px-1 py-0.5 text-[10px] text-slate-700 sm:text-xs"
-                    title={`${item.name} · ${item.days} วัน`}
+                    key={`team-${item.name}-${item.startDate}-${index}`}
+                    className="block truncate rounded px-1 py-0.5 text-[10px] text-slate-900 sm:text-xs"
+                    style={{ backgroundColor: item.departmentId ? `${departmentColors[item.departmentId]}33` : "#fef3c7" }}
+                    title={item.name}
                   >
-                    {item.name} · {item.days} วัน
+                    {item.name}
                   </span>
                 ))}
 
@@ -476,17 +268,20 @@ function DayView({
   teamLoading,
   teamError,
   leaveTypeNames,
+  holidays,
+  filters,
+  departmentColors,
 }) {
-  const ownItems = requests.filter(
+  const ownItems = filters.own ? requests.filter(
     (item) =>
       !["REJECTED", "CANCELLED"].includes(item.status) &&
       item.startDate <= selectedDate &&
       item.endDate >= selectedDate,
-  );
+  ) : [];
 
-  const teamItems = coworkers.filter(
-    (item) => item.startDate <= selectedDate && item.endDate >= selectedDate,
-  );
+  const teamItems = filters.team ? coworkers.filter(
+    (item) => item.startDate <= selectedDate && item.endDate >= selectedDate && (!item.departmentId || filters.departments[item.departmentId] !== false),
+  ) : [];
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -494,9 +289,10 @@ function DayView({
         {formatDate(selectedDate, thaiDay)}
       </h2>
 
-      <h3 className="mt-6 text-sm font-bold text-slate-700">ใบลาของฉัน</h3>
+      {filters.holidays && holidays.filter((item) => item.date === selectedDate).map((item) => <p key={item.date} className="mt-4 rounded-xl bg-rose-50 p-3 text-sm font-semibold text-rose-800">วันหยุดบริษัท · {item.nameTh}</p>)}
+      {filters.own && <h3 className="mt-6 text-sm font-bold text-slate-700">ใบลาของฉัน</h3>}
 
-      {ownItems.length ? (
+      {filters.own && (ownItems.length ? (
         <div className="mt-3 space-y-2">
           {ownItems.map((item) => (
             <div
@@ -521,13 +317,13 @@ function DayView({
         <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
           ไม่มีใบลาของคุณในวันนี้
         </p>
-      )}
+      ))}
 
-      <h3 className="mt-8 text-sm font-bold text-slate-700">
+      {filters.team && <h3 className="mt-8 text-sm font-bold text-slate-700">
         เพื่อนร่วมงานที่ลา
-      </h3>
+      </h3>}
 
-      {teamLoading ? (
+      {filters.team && (teamLoading ? (
         <p
           role="status"
           className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500"
@@ -540,17 +336,16 @@ function DayView({
         </p>
       ) : teamItems.length ? (
         <div className="mt-3 space-y-2">
-          {teamItems.map((item) => (
+          {teamItems.map((item, index) => (
             <div
-              key={item.id}
+              key={`${item.name}-${item.startDate}-${index}`}
               className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700"
+              style={{ borderLeftWidth: 4, borderLeftColor: item.departmentId ? departmentColors[item.departmentId] : "#94a3b8" }}
             >
               {item.name} · {formatDate(item.startDate)}
               {item.startDate !== item.endDate
                 ? ` – ${formatDate(item.endDate)}`
                 : ""}
-              {" · "}
-              {item.days} วัน
             </div>
           ))}
         </div>
@@ -558,7 +353,7 @@ function DayView({
         <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
           ไม่มีเพื่อนร่วมงานที่ลาในวันนี้
         </p>
-      )}
+      ))}
     </section>
   );
 }
@@ -569,6 +364,7 @@ function ListView({
   onYearChange,
   currentYear,
   leaveTypeNames,
+  userId,
 }) {
   const years = [
     ...new Set([
@@ -653,6 +449,7 @@ export default function EmployeeLeaveCalendar({
   userId,
   requests,
   coworkers = [],
+  canViewAllDepartments = false,
 }) {
   const router = useRouter();
   const leaveNewHref = getUserRoutes(userId).LEAVE_NEW;
@@ -662,11 +459,17 @@ export default function EmployeeLeaveCalendar({
   const [year, setYear] = useState(today.slice(0, 4));
 
   const [teamItems, setTeamItems] = useState(coworkers);
+  const [holidays, setHolidays] = useState([]);
+  const [filters, setFilters] = useState({ holidays: true, team: true, own: true, departments: {} });
   const [teamError, setTeamError] = useState("");
   const [teamLoading, setTeamLoading] = useState(true);
   const [configuredLeaveTypeNames, setConfiguredLeaveTypeNames] = useState({});
 
   const selectedMonth = selectedDate.slice(0, 7);
+  const selectedYear = selectedDate.slice(0, 4);
+  const visibleDepartments = [...new Map(teamItems.filter((item) => item.departmentId).map((item) => [item.departmentId, item.departmentName])).entries()].sort((a, b) => a[1].localeCompare(b[1], "th"));
+  const departmentColors = Object.fromEntries(visibleDepartments.map(([id], index) => [id, departmentPalette[index % departmentPalette.length]]));
+  function toggleFilter(key) { setFilters((current) => ({ ...current, [key]: !current[key] })); }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -716,6 +519,23 @@ export default function EmployeeLeaveCalendar({
     return () => controller.abort();
   }, [selectedMonth]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/v1/leave/holidays?year=${selectedYear}`, { signal: controller.signal, credentials: "same-origin" })
+      .then((response) => response.json()).then((body) => { if (!controller.signal.aborted) setHolidays(body.data?.items ?? []); })
+      .catch(() => { if (!controller.signal.aborted) setHolidays([]); });
+    return () => controller.abort();
+  }, [selectedYear]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/v1/leave/available-types", { signal: controller.signal, credentials: "same-origin" })
+      .then((response) => response.json())
+      .then((body) => { if (!controller.signal.aborted) setConfiguredLeaveTypeNames(Object.fromEntries((body.data?.items ?? []).map((item) => [item.code, item.nameTh]))); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
   const title =
     view === "day"
       ? formatDate(selectedDate, thaiDay)
@@ -763,10 +583,7 @@ export default function EmployeeLeaveCalendar({
       </div>
 
       <div className="mt-5">
-        <LeaveBalanceCard
-          onDate={selectedDate}
-          onTypesLoaded={setConfiguredLeaveTypeNames}
-        />
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><h2 className="mb-4 text-lg font-bold text-slate-950">วันลาคงเหลือ</h2><LeaveBalanceStrip onDate={selectedDate} /></section>
       </div>
 
       <div
@@ -840,6 +657,15 @@ export default function EmployeeLeaveCalendar({
         </p>
       ) : null}
 
+      {view !== "list" && <section aria-label="เลือกสิ่งที่แสดงบนปฏิทิน" className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-slate-900">แสดงบนปฏิทิน</h3>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
+          {[["holidays", "วันหยุดบริษัท", "#ef4444"], ["team", "วันลาเพื่อนร่วมงาน", "#a78bfa"], ["own", "ใบลาของฉัน", "#3b82f6"]].map(([key, label, color]) => <label key={key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={filters[key]} onChange={() => toggleFilter(key)} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: color }} />{label}</label>)}
+        </div>
+        {canViewAllDepartments && filters.team && visibleDepartments.length > 0 && <div className="mt-4 border-t border-slate-100 pt-3"><p className="mb-2 text-xs font-semibold text-slate-500">แผนกที่มีวันลาอนุมัติในเดือนนี้</p><div className="flex flex-wrap gap-x-5 gap-y-2">{visibleDepartments.map(([id, name]) => <label key={id} className="flex cursor-pointer items-center gap-2 text-sm"><input type="checkbox" checked={filters.departments[id] !== false} onChange={() => setFilters((current) => ({ ...current, departments: { ...current.departments, [id]: current.departments[id] === false } }))} className="size-4 accent-sky-600" /><span className="size-3 rounded-full" style={{ backgroundColor: departmentColors[id] }} />{name}</label>)}</div></div>}
+        <p className="mt-3 text-xs text-slate-500">ใบลาที่อนุมัติแล้วสีเข้ม · ฉบับร่างและรออนุมัติสีอ่อน · ไม่แสดงใบลาที่ปฏิเสธ</p>
+      </section>}
+
       {view === "month" ? (
         <MonthView
           selectedDate={selectedDate}
@@ -848,6 +674,10 @@ export default function EmployeeLeaveCalendar({
           requests={requests}
           coworkers={teamItems}
           teamLoading={teamLoading}
+          holidays={holidays}
+          filters={filters}
+          leaveTypeNames={configuredLeaveTypeNames}
+          departmentColors={departmentColors}
         />
       ) : view === "day" ? (
         <DayView
@@ -857,6 +687,9 @@ export default function EmployeeLeaveCalendar({
           teamLoading={teamLoading}
           teamError={teamError}
           leaveTypeNames={configuredLeaveTypeNames}
+          holidays={holidays}
+          filters={filters}
+          departmentColors={departmentColors}
         />
       ) : (
         <div className="mt-4">
@@ -866,6 +699,7 @@ export default function EmployeeLeaveCalendar({
             onYearChange={setYear}
             currentYear={today.slice(0, 4)}
             leaveTypeNames={configuredLeaveTypeNames}
+            userId={userId}
           />
         </div>
       )}

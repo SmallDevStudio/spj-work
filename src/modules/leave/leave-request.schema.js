@@ -32,6 +32,13 @@ export const leaveRequestDraftSchema = z
   })
   .strict()
   .superRefine((value, context) => {
+    if (value.leaveTypeCode === "OTHER" && !value.reason.trim()) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reason"],
+        message: "การลาอื่น ๆ ต้องระบุรายละเอียด",
+      });
+    }
     if (
       validISODate(value.startDate) &&
       validISODate(value.endDate) &&
