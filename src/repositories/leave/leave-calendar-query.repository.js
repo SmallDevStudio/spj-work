@@ -62,7 +62,7 @@ export async function listLeaveCalendarYears({ organizationId }) {
         year: Number(doc.id),
         status: data.status,
         revision: data.revision,
-        holidayCount: data.holidays?.length ?? data.holidayDates?.length ?? 0,
+        holidayCount: data.pendingDraft?.holidays?.length ?? data.holidays?.length ?? data.holidayDates?.length ?? 0,
         hasPendingDraft: Boolean(data.pendingDraft),
         updatedAt: toIsoString(data.updatedAt),
         publishedAt: toIsoString(data.publishedAt),

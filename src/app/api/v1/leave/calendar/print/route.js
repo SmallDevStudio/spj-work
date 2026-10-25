@@ -13,6 +13,7 @@ export async function POST(request) {
     const input = await readJsonRequest(request);
     const item = await prepareHolidayAnnouncement({
       currentSession, year: input.year, companyId: input.companyId,
+      executiveEmployeeId: input.executiveEmployeeId, expectedRevision: input.expectedRevision,
     });
     return createSuccessResponse({ item });
   } catch (error) {
